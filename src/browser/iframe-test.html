@@ -1,0 +1,5 @@
+<!doctype html><html><meta charset="utf-8"><title>IOI Desk · teste de iframe</title>
+<div id="content" style="background:#245;color:white">Apresentação em iframe</div>
+<script src="zone-fullscreen.js"></script><script>
+content.requestFullscreen().then(()=>parent.postMessage('ioi-test-entered','*'));
+</script></html>

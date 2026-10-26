@@ -1,0 +1,13 @@
+{
+  "product": "IOI Desk",
+  "version": "0.3.0",
+  "build": 7,
+  "channel": "refactor-preview",
+  "macBundleIdentifier": "com.ioi.desk.settings",
+  "deskflowVersion": "1.27.0",
+  "platforms": [
+    "windows",
+    "macos"
+  ],
+  "automaticUpdates": false
+}

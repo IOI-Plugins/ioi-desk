@@ -1,0 +1,24 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Teste de vídeo · IOI Desk</title>
+<style>body{background:#18202d;color:white;font:16px system-ui}.html5-video-player{position:relative;width:420px;height:230px;background:black}.html5-video-container{position:absolute;width:120px;height:40px;left:20px;top:30px}video{position:absolute;width:320px;height:180px;left:1600px;top:800px}.caption{position:absolute;bottom:5px;z-index:20}</style>
+<div id="player" class="html5-video-player"><div class="html5-video-container"><video id="video" class="html5-main-video" muted autoplay playsinline></video></div><div class="caption">Legenda sobre o vídeo</div></div><pre id="result">Testando…</pre>
+<script src="zone-fullscreen.js"></script><script>
+(async()=>{let stream;try{
+ const canvas=document.createElement('canvas');canvas.width=320;canvas.height=180;
+ const ctx=canvas.getContext('2d');ctx.fillStyle='#11aa77';ctx.fillRect(0,0,320,180);
+ stream=canvas.captureStream(5);video.srcObject=stream;await video.play();
+ const hint=document.createElement('div');hint.className='ytp-tooltip';hint.textContent='Tela cheia indisponível. Saiba mais';player.append(hint);
+ const other=document.createElement('div');other.className='ytp-popup';other.textContent='Outro aviso do player';player.append(other);
+ const before=video.getBoundingClientRect();const outer=[outerWidth,outerHeight,screenX,screenY];
+ await player.requestFullscreen();await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);
+ const box=video.getBoundingClientRect();const layer=video.parentElement.getBoundingClientRect();
+ if(Math.abs(box.left)>2||Math.abs(box.top)>2||Math.abs(box.width-innerWidth)>2||Math.abs(box.height-innerHeight)>2)throw Error('Vídeo ficou fora do viewport');
+ if(Math.abs(layer.width-innerWidth)>2||Math.abs(layer.height-innerHeight)>2)throw Error('Contêiner do vídeo não acompanhou o player');
+ if(video.videoWidth!==320||video.videoHeight!==180||video.readyState<2)throw Error('Vídeo não produziu quadro');
+ if(getComputedStyle(hint).display!=='none'||getComputedStyle(other).display==='none')throw Error('Tratamento do aviso de tela cheia não ficou limitado ao aviso específico');
+ if(outer.join()!==[outerWidth,outerHeight,screenX,screenY].join())throw Error('Janela externa foi alterada');
+ await document.exitFullscreen();const after=video.getBoundingClientRect();
+ if(getComputedStyle(hint).display==='none')throw Error('Aviso não restaurado ao sair');hint.remove();other.remove();
+ if(before.left!==after.left||before.top!==after.top||before.width!==after.width||before.height!==after.height)throw Error('Geometria não restaurada');
+ result.textContent='PASS: vídeo com quadro ativo, contêiner e vídeo preenchem viewport, offsets corrigidos, janela preservada e geometria restaurada';document.title='PASS vídeo · IOI Desk';
+ }catch(e){window.__ioiZoneFullscreen?.exit();result.textContent='FAIL: '+e.message;document.title='FAIL vídeo · '+e.message}finally{stream?.getTracks().forEach(t=>t.stop())}})();
+</script></html>

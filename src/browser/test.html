@@ -1,0 +1,35 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>IOI Desk · teste de tela cheia na janela</title>
+<style>body{font:16px system-ui;background:#151d29;color:white;margin:24px}#container{transform:translateZ(0);overflow:hidden;width:460px;height:240px}#player{background:#20586d;padding:20px}button{padding:12px}#result{white-space:pre-wrap}</style>
+<h1>IOI Desk · apresentação na zona</h1><p>Este teste não abre conteúdo de clientes nem usa vídeos externos.</p>
+<div id="container"><div id="player"><h2>Área de apresentação</h2><button id="enter">Preencher janela</button><p>Ao entrar, este painel deve ocupar apenas a área útil desta janela. Esc retorna.</p></div></div>
+<button id="run">Executar verificação automática</button><pre id="result">Aguardando teste.</pre>
+<script src="zone-fullscreen.js"></script><script>
+enter.onclick=()=>player.requestFullscreen();
+run.onclick=async()=>{
+ const original=player.getAttribute('style');const outer={w:outerWidth,h:outerHeight,x:screenX,y:screenY};const parent=container.getAttribute('style');
+ try{
+  await player.requestFullscreen();await new Promise(requestAnimationFrame);
+  const r=player.getBoundingClientRect();
+  if(Math.abs(r.width-innerWidth)>2||Math.abs(r.height-innerHeight)>2)throw Error('Área não preencheu a janela');
+  if(document.fullscreenElement!==player)throw Error('Estado não disponível para o site');
+  if(outer.w!==outerWidth||outer.h!==outerHeight||outer.x!==screenX||outer.y!==screenY)throw Error('A janela mudou de tamanho/posição');
+  await document.exitFullscreen();
+  if(document.fullscreenElement)throw Error('Estado permaneceu ativo');
+  if((player.getAttribute('style')||'')!==(original||'')||(container.getAttribute('style')||'')!==(parent||''))throw Error('Estilos não restaurados');
+  await player.requestFullscreen();document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+  if(window.__ioiZoneFullscreen.active)throw Error('Esc não encerrou');
+  await player.requestFullscreen();player.remove();await new Promise(resolve=>setTimeout(resolve,50));
+  if(window.__ioiZoneFullscreen.active)throw Error('Elemento removido não liberou o modo');
+  const frame=document.createElement('iframe');frame.style.cssText='width:340px;height:180px';
+  const entered=new Promise((resolve,reject)=>{const limit=setTimeout(()=>reject(Error('Iframe não entrou')),2000);const handler=event=>{if(event.source===frame.contentWindow&&event.data==='ioi-test-entered'){window.removeEventListener('message',handler);clearTimeout(limit);resolve();}};window.addEventListener('message',handler);});
+  frame.src='iframe-test.html';document.body.append(frame);await entered;await new Promise(requestAnimationFrame);
+  const framed=frame.getBoundingClientRect();
+  if(document.fullscreenElement!==frame||Math.abs(framed.width-innerWidth)>2||Math.abs(framed.height-innerHeight)>2)throw Error('Iframe não preencheu a janela');
+  await document.exitFullscreen();
+  if(frame.style.width!=='340px'||frame.style.height!=='180px')throw Error('Iframe não restaurou o tamanho');
+  frame.remove();
+  result.textContent='PASS: viewport, posição/tamanho da janela preservados, estado para o site, restauração dos estilos, Esc, remoção dinâmica e apresentação por iframe.';document.title='PASS · IOI Desk';
+ }catch(error){window.__ioiZoneFullscreen.exit();result.textContent='FAIL: '+error.message;document.title='FAIL · '+error.message;}
+};
+if(location.hash==='#test')run.click();
+</script></html>

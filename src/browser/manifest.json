@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "IOI Desk · Tela cheia na zona",
+  "version": "0.1.4",
+  "description": "Mantém a apresentação de sites dentro da janela, sem ocupar o monitor inteiro.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {"default_title": "IOI Desk · ativar/desativar tela cheia nesta janela"},
+  "background": {"service_worker": "background.js"},
+  "content_scripts": [{
+    "matches": ["https://*.youtube.com/*", "https://*.youtube-nocookie.com/*", "https://*.powerbi.com/*"],
+    "js": ["zone-fullscreen.js"],
+    "run_at": "document_start",
+    "all_frames": true,
+    "world": "MAIN"
+  }]
+}

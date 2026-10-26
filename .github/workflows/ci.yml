@@ -1,0 +1,46 @@
+name: Build and test
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python tools/check-source.py
+      - run: node --check src/browser/zone-fullscreen.js
+      - shell: pwsh
+        run: |
+          ./tools/build-windows.ps1
+          ./tools/test-windows.ps1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-test-results
+          path: work/test-results/windows/results.json
+          if-no-files-found: error
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 tools/check-source.py
+      - name: Download verified original Deskflow
+        run: python3 tools/fetch-deskflow.py
+      - name: Compile and test (isolated ad hoc build; never install)
+        env:
+          IOI_ALLOW_ADHOC: '1'
+          IOI_DESKFLOW_APP: ${{ github.workspace }}/vendor/Deskflow.app
+          IOI_DESK_DATA_ROOT: ${{ runner.temp }}/ioi-desk-tests
+        run: sh tools/build-macos.sh
