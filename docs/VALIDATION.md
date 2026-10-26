@@ -1,5 +1,21 @@
 # Validação da refatoração · 26/10/2026
 
+## Distribuição: verificações adicionais
+
+- GitHub Actions, execução 40421069767: Windows e macOS aprovados.
+- Windows: dez testes e geração MSIX por MakeAppx aprovados. O artefato
+  `windows-msix-validation-only` usa identidade de preview e não foi instalado,
+  submetido ou certificado pela Microsoft.
+- MacBook Pro: build com símbolo IOI azul, recursos do navegador e avisos
+  de terceiros, assinado com Developer ID, Team 5723C964BL e Hardened Runtime.
+  Geometria, layout e migração passaram. Nenhum app instalado foi substituído.
+- O acesso SSH do Windows ao MacBook foi validado por chave dedicada.
+- Notarização ainda não executada: perfil IOIDesk ausente no Keychain.
+- Compatibilidade do pacote atual com Mac App Store bloqueada pelos recursos
+  de Acessibilidade/Apple Events fora do sandbox; detalhes em STORE-READINESS.md.
+
+As observações abaixo registram a validação inicial da refatoração.
+
 ## Executado
 
 Windows compilado com o compilador .NET Framework disponível na máquina. Dez verificações passaram, usando diretório de dados isolado:
@@ -36,3 +52,4 @@ Mac compilado no Mac mini autorizado, em `Library/Caches/IOIDeskRefactor`, sem s
 - Atualização automática e distribuição comercial permanecem fora do que foi validado nesta refatoração.
 
 A compilação Mac de teste usa assinatura ad hoc explicitamente habilitada, somente no cache de desenvolvimento. Ela não foi instalada e não deve ser usada como atualização do aplicativo autorizado. Dados pessoais, permissões e sessões atuais foram preservados.
+
