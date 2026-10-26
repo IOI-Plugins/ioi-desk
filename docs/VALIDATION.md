@@ -10,7 +10,11 @@
   de terceiros, assinado com Developer ID, Team 5723C964BL e Hardened Runtime.
   Geometria, layout e migração passaram. Nenhum app instalado foi substituído.
 - O acesso SSH do Windows ao MacBook foi validado por chave dedicada.
-- Notarização ainda não executada: perfil IOIDesk ausente no Keychain.
+- Notarização aceita pela Apple: submissão
+  `9f3a5355-e766-43fc-ba98-f3f4e17796fb`, enviada em 26/10/2026.
+  Credencial IOIDesk validada e salva somente no Keychain. Stapling e
+  `stapler validate` passaram; Gatekeeper retornou `accepted` com origem
+  `Notarized Developer ID`. ZIP final gerado por finish-notarization-macos.sh.
 - Compatibilidade do pacote atual com Mac App Store bloqueada pelos recursos
   de Acessibilidade/Apple Events fora do sandbox; detalhes em STORE-READINESS.md.
 
