@@ -24,9 +24,10 @@ jobs:
           ./tools/build-windows.ps1
           ./tools/test-windows.ps1
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
         with:
           name: windows-test-results
-          path: work/test-results/windows/results.json
+          path: work/test-results/windows/
           if-no-files-found: error
   macos:
     runs-on: macos-15
@@ -44,3 +45,4 @@ jobs:
           IOI_DESKFLOW_APP: ${{ github.workspace }}/vendor/Deskflow.app
           IOI_DESK_DATA_ROOT: ${{ runner.temp }}/ioi-desk-tests
         run: sh tools/build-macos.sh
+
