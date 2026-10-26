@@ -17,5 +17,8 @@ try {
  }
 } finally {$env:IOI_DESK_DATA_ROOT=$previousData}
 $results | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $reports 'results.json') -Encoding UTF8
-if(@($results | Where-Object {!$_.passed}).Count){throw 'Há falhas de teste. Consulte work/test-results/windows/results.json.'}
+$failures=@($results | Where-Object {!$_.passed})
+foreach($failure in $failures){Write-Output ("FAIL: "+$failure.name+"; exitCode="+$failure.exitCode+"; "+$failure.report)}
+if($failures.Count){throw 'Há falhas de teste. Consulte work/test-results/windows/results.json.'}
 Write-Output "PASS: $($results.Count) testes Windows em diretório de dados isolado."
+
