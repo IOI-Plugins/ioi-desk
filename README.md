@@ -1,61 +1,38 @@
-# IOI Desk · refatoração 0.3.0
+<p align="center">
+  <img src="assets/IOIDesk.png" width="120" alt="Símbolo IOI">
+</p>
 
-Base única de código do IOI Desk para Windows e macOS. Organiza aplicações em zonas, integra o componente original Deskflow e inclui um complemento de navegador para tela cheia dentro da janela.
+<h1 align="center">IOI Desk</h1>
+<p align="center"><strong>Seu espaço de trabalho integrado.</strong></p>
+<p align="center">Windows · macOS</p>
 
-## O que mudou
+Organize seus aplicativos, acompanhe vários projetos e transite entre Windows e Mac com um espaço pensado para o seu jeito de trabalhar.
 
-- **Um aplicativo no Mac:** configurações, zonas, seleção de janelas e conexão pertencem ao mesmo processo IOI Desk. Camadas.app e a interface antiga de conexão foram eliminados da nova estrutura.
-- **Configurações fora dos binários:** atualizar o executável ou o aplicativo não exige copiar layouts manualmente. A migração inicial copia dados antigos sem apagar os originais e sem substituir configurações novas já existentes.
-- **Responsabilidades separadas:** interface, organização de janelas, captura/entrada Windows, conexão, diagnóstico e armazenamento têm módulos próprios.
-- **Layouts Windows centralizados:** início, Aplicar e organização de painéis usam a mesma política de monitor e preservam a zona atribuída à apresentação.
-- **Versão única de produto:** release.json gera os metadados Windows e Mac. O complemento do navegador mantém sua versão de componente declarada no manifesto.
-- **Assinatura com verificação:** compilações normais do Mac exigem identidade persistente. Assinatura provisória só é permitida explicitamente em testes isolados.
+## Cada atividade no seu lugar
 
-O Deskflow continua como componente original de terceiros, em processo independente. Não é outro aplicativo IOI a ser configurado pelo usuário. Seu código e licenças não foram incorporados nem renomeados como código próprio.
+Transforme seus monitores em áreas dedicadas a código, terminais, navegação, reuniões e acompanhamento. Ajuste as zonas ao seu fluxo e mantenha as ferramentas que você usa por perto.
 
-## Estrutura
+- **Um espaço para cada tarefa.** Distribua aplicativos em zonas e escolha como aproveitar cada monitor.
+- **Organização com um gesto.** Use Shift + arrastar para levar uma janela à zona desejada.
+- **Windows e Mac conectados.** Compartilhe mouse e teclado entre computadores pela rede, com conexão protegida.
+- **Apresentações com espaço definido.** No Windows, use uma tela virtual dedicada para apresentar sem expor o restante da mesa.
+- **Mais controle no navegador.** O complemento do IOI Desk adapta a tela cheia de páginas compatíveis aos limites da janela.
+- **Seu ambiente, do seu jeito.** Personalize os layouts para desenvolver, estudar, acompanhar indicadores ou conduzir reuniões.
 
-```text
-release.json             versão e identidade do produto
-src/windows/             interface e serviços Windows
-src/macos/               aplicativo único AppKit e serviços internos
-src/browser/             complemento de apresentação dentro da janela
-tests/windows/           regressões de zonas, entrada, migração e layouts
-tests/macos/             geometria, migração, layouts e ciclo de vida
-tools/                   compilação e validação reproduzíveis
-assets/                  ícones, manifesto e metadados
-third-party/             avisos e licenças preservados
-dist/                    artefatos de desenvolvimento, sem dados pessoais
-docs/                    arquitetura, migração e resultados
-```
+## Uma mesa para vários projetos
 
-## Dados do usuário
+Deixe o editor e os terminais no centro do trabalho. Mantenha agendas, conversas e ferramentas de IA à vista. Reserve uma área para validar aplicações e compartilhar com a equipe. O IOI Desk organiza o espaço para você continuar de onde está.
 
-Windows: `%LOCALAPPDATA%/IOI Desk/Workspace`, `Connection` e `Logs`.
+## Disponibilidade
 
-Mac: `~/Library/Application Support/IOI Desk/Workspace` e `Connection`. O antigo arquivo `Camadas/workspace.json` é importado apenas se o destino não existir. A identidade principal `com.ioi.desk.settings` foi preservada; não foi criado outro identificador de produto.
+O IOI Desk está em desenvolvimento para Windows e macOS. A distribuição para instalação está sendo preparada; ainda não há um instalador público de lançamento. Compatibilidade de aplicativos e recursos em validação estão documentados nos links abaixo.
 
-Os nomes antigos das sessões de terminal são reconhecidos na migração para conservar as sessões abertas. Nenhuma sessão é encerrada pelo importador.
+## Conheça o projeto
 
-## Compilação e testes
+- [Desenvolvimento e compilação](docs/DEVELOPMENT.md)
+- [Histórico de versões](CHANGELOG.md)
+- [Distribuição e atualizações](docs/DISTRIBUTION.md)
+- [Validação e compatibilidade](docs/VALIDATION.md)
+- [Identidade visual](assets/BRAND.md)
 
-Windows: execute `tools/build-windows.ps1` e `tools/test-windows.ps1`. Para incluir a dependência original, informe `-IncludeRuntime -DeskflowRoot CAMINHO_DO_COMPONENTE_ORIGINAL`.
-
-Mac: execute `tools/build-macos.sh`, informando `IOI_CODESIGN_IDENTITY` e `IOI_DESKFLOW_APP`. O primeiro é o hash da identidade de assinatura disponível no chaveiro; o segundo é o caminho do componente original Deskflow.app. O script gera o ícone e os metadados e compila um único executável IOIDesk.
-
-`IOI_ALLOW_ADHOC=1` permite somente uma compilação de teste. **Não instalar essa compilação sobre o aplicativo autorizado.** A migração final usa assinatura persistente. Não há comandos para redefinir bases de permissões, confiar em certificados ou remover autorizações.
-
-`tools/check-source.py` verifica os limites arquiteturais. Consulte [VALIDATION.md](docs/VALIDATION.md) para o resultado dos testes e as verificações ainda pendentes.
-
-## Atualizações
-
-O processo de compilação e validação está unificado no projeto. **Um atualizador automático entre computadores ainda não está implementado.** `tools/verify-update.sh` bloqueia assinaturas provisórias ou identidade diferente antes da substituição. A transição do pacote antigo, composto por dois aplicativos, para o novo pacote único precisa ser validada como migração inicial.
-
-A instalação Windows ainda pode usar um caminho histórico. Esse caminho representa uma implantação, não uma segunda base de desenvolvimento. Novas alterações partem somente deste projeto.
-
-## Integração contínua e marca
-
-O GitHub Actions executa compilação e testes nos dois sistemas. Consulte
-[DISTRIBUTION.md](docs/DISTRIBUTION.md) para os limites de publicação e assinatura.
-O símbolo original IOI foi preservado e recebeu o azul aprovado para o Desk;
-origem e decisão estão em [BRAND.md](assets/BRAND.md).
+O compartilhamento de mouse e teclado utiliza o componente original [Deskflow](https://github.com/deskflow/deskflow). Seus créditos e licenças estão preservados em [third-party](third-party/).
