@@ -1,0 +1,8 @@
+dist/
+work/
+vendor/
+*.p12
+*.pfx
+*.pem
+*.key
+*.p8
