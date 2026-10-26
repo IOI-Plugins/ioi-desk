@@ -10,7 +10,10 @@ static class PresentationSelectionTest {
     [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr window,uint command);
     static bool Above(IntPtr app,IntPtr other){for(IntPtr window=GetWindow(other,3);window!=IntPtr.Zero;window=GetWindow(window,3))if(window==app)return true;return false;}
     public static void Run(string path) {
-        using(Viewer viewer=new Viewer())using(Form cover=new Form())using(Form sample=new Form())using(ZoneBoard board=new ZoneBoard(viewer,Native.FindPhysicalSecondary()??Screen.PrimaryScreen,9,new string[]{"Presentation test","Test","Test","Test"},new double[]{.35,.30,.20})) {
+        // Exercise assignment/transfer against an explicit screen. Hosted runners
+        // do not have the user's virtual-display driver; driver integration is
+        // validated separately on a workstation with that driver installed.
+        using(Viewer viewer=new Viewer(Screen.PrimaryScreen))using(Form cover=new Form())using(Form sample=new Form())using(ZoneBoard board=new ZoneBoard(viewer,Native.FindPhysicalSecondary()??Screen.PrimaryScreen,9,new string[]{"Presentation test","Test","Test","Test"},new double[]{.35,.30,.20})) {
             board.ViewerSlot=0;
             sample.Text="IOI Desk · teste de apresentação";sample.BackColor=Color.CornflowerBlue;
             board.Shown+=delegate{board.BeginInvoke((Action)delegate{
@@ -37,3 +40,4 @@ static class PresentationSelectionTest {
         }
     }
 }
+
