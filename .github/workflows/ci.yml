@@ -29,6 +29,22 @@ jobs:
           name: windows-test-results
           path: work/test-results/windows/
           if-no-files-found: error
+      - name: Fetch original runtime and corresponding source
+        shell: pwsh
+        run: |
+          ./tools/fetch-deskflow-windows.ps1
+          python tools/fetch-deskflow-source.py
+          $runtime=(Get-Content vendor/windows-runtime-path.txt -Raw).Trim()
+          ./tools/build-windows.ps1 -IncludeRuntime -DeskflowRoot $runtime
+      - name: Validate MSIX packaging (preview identity; never install)
+        shell: pwsh
+        run: ./tools/package-windows.ps1 -Preview
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-msix-validation-only
+          path: dist/*-preview-x64.msix
+          if-no-files-found: error
+          retention-days: 7
   macos:
     runs-on: macos-15
     timeout-minutes: 20
@@ -38,11 +54,12 @@ jobs:
           persist-credentials: false
       - run: python3 tools/check-source.py
       - name: Download verified original Deskflow
-        run: python3 tools/fetch-deskflow.py
+        run: |
+          python3 tools/fetch-deskflow.py
+          python3 tools/fetch-deskflow-source.py
       - name: Compile and test (isolated ad hoc build; never install)
         env:
           IOI_ALLOW_ADHOC: '1'
           IOI_DESKFLOW_APP: ${{ github.workspace }}/vendor/Deskflow.app
           IOI_DESK_DATA_ROOT: ${{ runner.temp }}/ioi-desk-tests
         run: sh tools/build-macos.sh
-

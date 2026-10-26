@@ -13,7 +13,9 @@ if($LASTEXITCODE -ne 0){throw 'IOI Desk não compilou.'}
 if($IncludeRuntime){
     if(!$DeskflowRoot -or !(Test-Path -LiteralPath (Join-Path $DeskflowRoot 'deskflow-core.exe'))){throw 'Informe -DeskflowRoot para incluir o componente original.'}
     New-Item -ItemType Directory -Path (Join-Path $destination 'vendor') -Force | Out-Null
-    Copy-Item -LiteralPath $DeskflowRoot -Destination (Join-Path $destination 'vendor/deskflow') -Recurse -Force
+    $runtimeDestination=Join-Path $destination 'vendor/deskflow'
+    New-Item -ItemType Directory -Path $runtimeDestination -Force | Out-Null
+    Get-ChildItem -LiteralPath $DeskflowRoot | Copy-Item -Destination $runtimeDestination -Recurse -Force
     $settings=Join-Path $destination 'vendor/deskflow/settings/Deskflow.conf'
     if(Test-Path -LiteralPath $settings){Set-Content -LiteralPath $settings -Value "[log]`nlevel=Info`n" -Encoding UTF8}
 }

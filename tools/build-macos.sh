@@ -38,6 +38,8 @@ if [ -z "${IOI_DESKFLOW_APP:-}" ] || [ ! -d "$IOI_DESKFLOW_APP" ]; then
 fi
 ditto "$IOI_DESKFLOW_APP" "$app/Contents/Helpers/Deskflow.app"
 cp release.json "$app/Contents/Resources/release.json"
+ditto "$root/third-party" "$app/Contents/Resources/ThirdParty"
+ditto "$root/src/browser" "$app/Contents/Resources/BrowserExtension"
 ioi_sign_app "$app" "$root/assets/Entitlements.plist"
 "$app/Contents/MacOS/IOIDesk" --self-test
 "$app/Contents/MacOS/IOIDesk" --layout-test
