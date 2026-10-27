@@ -32,7 +32,7 @@ Function .onInit
         Sleep 500
         Goto wait_for_app
       ${EndIf}
-      MessageBox MB_OK|MB_ICONEXCLAMATION "Encerre o IOI Desk antes de instalar. Seus outros aplicativos e sessões podem continuar abertos."
+      MessageBox MB_OK|MB_ICONEXCLAMATION "Encerre o IOI Desk antes de instalar. Seus outros aplicativos e sessÃµes podem continuar abertos."
       Abort
     ${EndIf}
 FunctionEnd
@@ -53,7 +53,7 @@ Section "IOI Desk"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\IOIDesk" "DisplayName" "IOI Desk"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\IOIDesk" "DisplayVersion" "${VERSION}"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\IOIDesk" "Publisher" "IOI"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\IOIDesk" "UninstallString" '$"$INSTDIR\Uninstall.exe$"'
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\IOIDesk" "UninstallString" '"$INSTDIR\Uninstall.exe"'
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\IOIDesk" "NoModify" 1
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\IOIDesk" "NoRepair" 1
   CreateShortcut "$SMPROGRAMS\IOI Desk.lnk" "$INSTDIR\IOIDesk.exe"

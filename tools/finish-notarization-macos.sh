@@ -3,10 +3,15 @@ set -eu
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 app="$root/dist/macos/IOI Desk.app"
 profile=${IOI_NOTARY_PROFILE:-IOIDesk}
+ioi_notarytool() {
+  keychain=${IOI_NOTARY_KEYCHAIN:-${RUNNER_TEMP:-}/ioi-release.keychain-db}
+  if [ -f "$keychain" ]; then xcrun notarytool "$@" --keychain "$keychain"
+  else xcrun notarytool "$@"; fi
+}
 submission=${1:?Supply the Apple submission UUID}
 case "$submission" in *[!A-Fa-f0-9-]*|'') echo 'Invalid submission identifier.' >&2; exit 1;; esac
 mkdir -p "$root/work/notarization"
-xcrun notarytool info "$submission" --keychain-profile "$profile" --output-format json > "$root/work/notarization/result.json"
+ioi_notarytool info "$submission" --keychain-profile "$profile" --output-format json > "$root/work/notarization/result.json"
 python3 - "$root/work/notarization/result.json" <<'PY'
 import json,sys
 result=json.load(open(sys.argv[1]))

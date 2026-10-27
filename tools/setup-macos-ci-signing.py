@@ -3,6 +3,7 @@ import base64
 import os
 from pathlib import Path
 import secrets
+import shutil
 import subprocess
 
 root=Path(__file__).resolve().parents[1]
@@ -17,7 +18,10 @@ keychain=temporary/'ioi-release.keychain-db'
 keychain_password=secrets.token_urlsafe(36)
 # This password protects only the temporary CI keychain, not an Apple account.
 def command(args):
-    result=subprocess.run(args,capture_output=True,text=True,timeout=180)
+    try:
+        result=subprocess.run(args,capture_output=True,text=True,timeout=60)
+    except subprocess.TimeoutExpired:
+        raise SystemExit('Release signing command timed out; secret output withheld.') from None
     if result.returncode:
         raise SystemExit('Release signing setup failed at '+Path(args[0]).name)
 command(['security','create-keychain','-p',keychain_password,str(keychain)])
@@ -25,9 +29,16 @@ command(['security','set-keychain-settings','-lut','21600',str(keychain)])
 command(['security','unlock-keychain','-p',keychain_password,str(keychain)])
 command(['security','list-keychains','-d','user','-s',str(keychain)])
 command(['security','default-keychain','-d','user','-s',str(keychain)])
-command(['swift',str(root/'tools/import-macos-ci-identity.swift'),str(certificate),str(keychain)])
-command(['security','set-key-partition-list','-S','apple-tool:,apple:','-s','-k',keychain_password,str(keychain)])
+# Standard GitHub recipe: only the disposable runner keychain permits tools.
+command(['security','import',str(certificate),'-P',os.environ['MACOS_CERTIFICATE_PASSWORD'],'-A','-t','cert','-f','pkcs12','-k',str(keychain)])
+command(['security','set-key-partition-list','-S','apple-tool:,apple:','-k',keychain_password,str(keychain)])
 certificate.unlink()
+probe=temporary/'ioi-signing-probe'
+shutil.copy2('/usr/bin/true',probe)
+command(['codesign','--force','--timestamp','--sign','01888205A54DCB53AE5FF7F6437F6F95893005B7',str(probe)])
+command(['codesign','--verify','--strict',str(probe)])
+probe.unlink()
+print('Noninteractive codesign authorization verified.',flush=True)
 # Apple's supported noninteractive authentication, on an ephemeral runner.
 # Read the password from GitHub Secrets, never print the command or its output.
 print('Developer ID imported into disposable CI keychain.',flush=True)
