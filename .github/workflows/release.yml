@@ -24,6 +24,7 @@ jobs:
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           python3 -c 'import json,os; r=json.load(open("release.json")); assert os.environ["GITHUB_REF_NAME"]=="v"+r["version"], "Tag/version mismatch"'
           for attempt in $(seq 1 40); do
+            echo "Checking CI result: attempt $attempt/40"
             state=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$GITHUB_SHA" --json status,conclusion --jq '.[0] | if .status == "completed" then .conclusion else "waiting" end')
             if [ "$state" = success ]; then exit 0; fi
             if [ "$state" != waiting ] && [ -n "$state" ] && [ "$state" != null ]; then echo 'CI rejected this release commit'; exit 1; fi
@@ -129,3 +130,4 @@ jobs:
       - name: Remove temporary update signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/sparkle-release.key"
+
