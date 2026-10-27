@@ -15,7 +15,7 @@ jobs:
       contents: read
       actions: read
       security-events: read
-    timeout-minutes: 15
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -29,8 +29,8 @@ jobs:
           python3 -c 'import json,os; r=json.load(open("release.json")); assert os.environ["GITHUB_REF_NAME"]=="v"+r["version"], "Tag/version mismatch"'
           for workflow in ci.yml codeql.yml; do
             approved=false
-            for attempt in $(seq 1 40); do
-              echo "Checking $workflow: attempt $attempt/40"
+            for attempt in $(seq 1 100); do
+              echo "Checking $workflow: attempt $attempt/100"
               state=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" --commit "$GITHUB_SHA" --json status,conclusion --jq '.[0] | if .status == "completed" then .conclusion else "waiting" end')
               if [ "$state" = success ]; then approved=true; break; fi
               if [ "$state" != waiting ] && [ -n "$state" ] && [ "$state" != null ]; then echo 'Required checks rejected this commit'; exit 1; fi
@@ -110,7 +110,7 @@ jobs:
   publish:
     needs: [windows, macos]
     runs-on: macos-15
-    timeout-minutes: 15
+    timeout-minutes: 35
     environment: release
     permissions:
       contents: write
