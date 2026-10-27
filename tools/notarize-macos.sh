@@ -12,5 +12,9 @@ printf '%s' "$signature" | grep -q 'TeamIdentifier=5723C964BL' || { echo 'Equipe
 xcrun notarytool history --keychain-profile "$profile" --output-format json > "$root/work/notarization/history.json"
 archive="$root/work/notarization/IOIDesk.zip"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
-xcrun notarytool submit "$archive" --keychain-profile "$profile" --output-format json > "$root/work/notarization/submission.json"
+if [ "${IOI_NOTARY_WAIT:-0}" = 1 ]; then
+  xcrun notarytool submit "$archive" --keychain-profile "$profile" --wait --timeout 20m --output-format json > "$root/work/notarization/submission.json"
+else
+  xcrun notarytool submit "$archive" --keychain-profile "$profile" --output-format json > "$root/work/notarization/submission.json"
+fi
 echo "Enviado. Consulte work/notarization/submission.json; não instalado."

@@ -21,6 +21,10 @@ the preserved license, exception, provenance and corresponding source.
 The original vendor packages retain the notices for their own dependencies.
 The MIT license of IOI Desk does not replace any of those terms.
 
+Automatic updates use the original Sparkle framework (sparkle-project.org)
+and WinSparkle (winsparkle.org). Their original license and dependency notices
+are included with each platform package. No updater is represented as IOI-authored.
+
 The IOI symbol originates from adenisdesa/ioi-arca,
 commit 1433de381b3916a35771e0d96e923ebe9913bf83,
 _historico/ioi-package-marca/ioi-symbol-positive.svg. Its geometry is preserved;

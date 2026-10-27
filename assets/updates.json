@@ -1,0 +1,6 @@
+{
+  "repository": "IOI-Plugins/ioi-desk",
+  "publicKey": "orBk5RWNKHqB0q++JZiPgfgLmuSgXKRbMkXf4ilblcQ=",
+  "macosFeed": "https://github.com/IOI-Plugins/ioi-desk/releases/latest/download/appcast-macos.xml",
+  "windowsFeed": "https://github.com/IOI-Plugins/ioi-desk/releases/latest/download/appcast-windows.xml"
+}

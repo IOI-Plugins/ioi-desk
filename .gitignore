@@ -2,6 +2,7 @@ dist/
 work/
 vendor/
 src/windows/Product.cs
+src/windows/UpdateConfig.cs
 src/macos/Product.swift
 docs/SIGNING.md
 __pycache__/

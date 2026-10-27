@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  public:
   schedule:
     - cron: '23 8 * * 1'
   workflow_dispatch:
@@ -59,6 +60,7 @@ jobs:
         run: |
           python3 tools/fetch-deskflow.py
           python3 tools/fetch-deskflow-source.py
+          python3 tools/fetch-updater.py
           sh tools/build-macos.sh
       - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:

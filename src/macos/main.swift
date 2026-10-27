@@ -1,6 +1,7 @@
 import AppKit
 do {
-    if CommandLine.arguments.contains("--layout-test") { try runLayoutTests() }
+    if CommandLine.arguments.contains("--update-test") { try DeskUpdates.test() }
+    else if CommandLine.arguments.contains("--layout-test") { try runLayoutTests() }
     else if CommandLine.arguments.contains("--lifecycle-test") { try runLifecycleTests() }
     else if CommandLine.arguments.contains("--migration-test") { try AppPaths.test() }
     else if try !runWorkspaceTests() {

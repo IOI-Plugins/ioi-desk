@@ -8,7 +8,7 @@ $previousData=$env:IOI_DESK_DATA_ROOT
 $env:IOI_DESK_DATA_ROOT=Join-Path $root 'work/test-data/windows'
 $results=@()
 try {
- foreach($name in @('data-migration-test','layout-persistence-test','self-test','profile-test','grid-test','picker-test','drag-test','presentation-test','zone-test','input-safety-test')) {
+ foreach($name in @('data-migration-test','layout-persistence-test','self-test','profile-test','grid-test','picker-test','drag-test','presentation-test','zone-test','input-safety-test','update-test')) {
   $report=Join-Path $reports ($name+'.txt')
   $process=Start-Process -FilePath $Executable -ArgumentList ('--'+$name),('"'+$report+'"') -PassThru -WindowStyle Hidden
   if(!$process.WaitForExit(15000)){throw "Teste $name não terminou em 15 segundos; processo próprio $($process.Id)."}
@@ -21,4 +21,3 @@ $failures=@($results | Where-Object {!$_.passed})
 foreach($failure in $failures){Write-Output ("FAIL: "+$failure.name+"; exitCode="+$failure.exitCode+"; "+$failure.report)}
 if($failures.Count){throw 'Há falhas de teste. Consulte work/test-results/windows/results.json.'}
 Write-Output "PASS: $($results.Count) testes Windows em diretório de dados isolado."
-

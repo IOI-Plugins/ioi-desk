@@ -21,17 +21,19 @@ class WorkspaceContext : ApplicationContext {
         trayMenu.Items.Add("Escolher janela de apresentação",null,delegate{if(First!=null){First.ExitFromHub();ZoneWorkspace.ChoosePresentation(First);}});
         trayMenu.Items.Add("Reencaixar janelas",null,delegate{ZoneWorkspace.ArrangeAll();});
         trayMenu.Items.Add("Mouse e teclado · Windows / Mac",null,delegate{ComputerSharing.Open();});
+        trayMenu.Items.Add("Verificar atualizações…",null,delegate{DeskUpdates.Check();});
         trayMenu.Items.Add("Diagnóstico · abrir registros",null,delegate{Directory.CreateDirectory(TraceLog.Folder);Process.Start(new ProcessStartInfo(TraceLog.Folder){UseShellExecute=true});});
         trayMenu.Items.Add(new ToolStripSeparator());
         trayMenu.Items.Add("Encerrar IOI Desk",null,delegate{foreach(Viewer view in windows.ToArray())view.Close();});
         tray=new NotifyIcon{Text="IOI Desk",Icon=root.Icon??SystemIcons.Application,ContextMenuStrip=trayMenu,Visible=true};
         tray.DoubleClick+=delegate{if(First!=null)First.OpenPreferences();};
-        Application.ApplicationExit+=delegate{ComputerSharing.Stop();};
+        Application.ApplicationExit+=delegate{DeskUpdates.Stop();ComputerSharing.Stop();};
         root.Show();
+        DeskUpdates.Start(root,delegate{foreach(Viewer view in windows.ToArray())view.Close();});
         reopen.Tick+=delegate{if(Program.ConsumeShowRequest()&&First!=null)First.OpenPreferences();};reopen.Start();
         ComputerSharing.AutoStart();
     }
-    void Track(Viewer view){windows.Add(view);view.FormClosed+=delegate{windows.Remove(view);if(windows.Count==0){reopen.Stop();reopen.Dispose();if(tray!=null){tray.Visible=false;tray.Dispose();}trayMenu.Dispose();ExitThread();}};}
+    void Track(Viewer view){windows.Add(view);view.FormClosed+=delegate{windows.Remove(view);if(windows.Count>0)DeskUpdates.SetOwner(First);if(windows.Count==0){reopen.Stop();reopen.Dispose();if(tray!=null){tray.Visible=false;tray.Dispose();}trayMenu.Dispose();ExitThread();}};}
     public Viewer Open(Screen screen){Viewer view=new Viewer(screen);Track(view);view.Show();Tile();return view;}
     public void Tile() {
         LayoutViews(windows,ZoneWorkspace.Boards);

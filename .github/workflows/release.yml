@@ -1,0 +1,131 @@
+name: Publish signed release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.repository == 'IOI-Plugins/ioi-desk'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require a tested commit from main and a matching version tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          python3 -c 'import json,os; r=json.load(open("release.json")); assert os.environ["GITHUB_REF_NAME"]=="v"+r["version"], "Tag/version mismatch"'
+          for attempt in $(seq 1 40); do
+            state=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$GITHUB_SHA" --json status,conclusion --jq '.[0] | if .status == "completed" then .conclusion else "waiting" end')
+            if [ "$state" = success ]; then exit 0; fi
+            if [ "$state" != waiting ] && [ -n "$state" ] && [ "$state" != null ]; then echo 'CI rejected this release commit'; exit 1; fi
+            sleep 15
+          done
+          echo 'No successful CI for this exact commit'; exit 1
+  windows:
+    needs: validate
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python tools/fetch-updater.py --installer
+      - run: python tools/fetch-deskflow-source.py
+      - shell: pwsh
+        run: |
+          ./tools/fetch-deskflow-windows.ps1
+          $runtime=(Get-Content vendor/windows-runtime-path.txt -Raw).Trim()
+          ./tools/build-windows.ps1 -IncludeRuntime -DeskflowRoot $runtime
+          ./tools/test-windows.ps1
+      - run: python tools/package-installer-windows.py
+      - run: python tools/test-windows-installer.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-windows-installer
+          path: dist/*-windows-x64-setup.exe
+          if-no-files-found: error
+          retention-days: 7
+  macos:
+    needs: validate
+    runs-on: macos-15
+    timeout-minutes: 40
+    environment: release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download verified original components
+        run: |
+          python3 tools/fetch-updater.py
+          python3 tools/fetch-deskflow.py
+          python3 tools/fetch-deskflow-source.py
+      - name: Import signing identity and notarization credentials
+        env:
+          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: python3 tools/setup-macos-ci-signing.py
+      - name: Build with persistent Developer ID
+        env:
+          IOI_CODESIGN_IDENTITY: 01888205A54DCB53AE5FF7F6437F6F95893005B7
+          IOI_DESKFLOW_APP: ${{ github.workspace }}/vendor/Deskflow.app
+          IOI_DESK_DATA_ROOT: ${{ runner.temp }}/ioi-release-tests
+        run: sh tools/build-macos.sh
+      - name: Require notarization, staple and validate Gatekeeper
+        env:
+          IOI_NOTARY_WAIT: '1'
+        run: |
+          sh tools/notarize-macos.sh
+          submission=$(python3 -c 'import json; print(json.load(open("work/notarization/submission.json"))["id"])')
+          sh tools/finish-notarization-macos.sh "$submission"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-macos-notarized
+          path: dist/*-macos-arm64.zip
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove disposable signing keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/ioi-release.keychain-db" || true
+  publish:
+    needs: [windows, macos]
+    runs-on: macos-15
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: dist/release
+      - run: python3 tools/fetch-updater.py
+      - name: Sign archives and appcasts with the release key
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          python3 -c 'import os,pathlib; p=pathlib.Path(os.environ["RUNNER_TEMP"])/"sparkle-release.key"; p.write_text(os.environ["SPARKLE_PRIVATE_KEY"]); p.chmod(0o600)'
+          SPARKLE_SIGNING_KEY_FILE="$RUNNER_TEMP/sparkle-release.key" python3 tools/generate-update-feeds.py dist/release
+      - name: Publish only the verified packages and signed feeds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "IOI Desk ${GITHUB_REF_NAME#v}" --generate-notes dist/release/*
+          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+      - name: Remove temporary update signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sparkle-release.key"

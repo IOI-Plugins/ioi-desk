@@ -56,4 +56,3 @@ Mac compilado no Mac mini autorizado, em `Library/Caches/IOIDeskRefactor`, sem s
 - Atualização automática e distribuição comercial permanecem fora do que foi validado nesta refatoração.
 
 A compilação Mac de teste usa assinatura ad hoc explicitamente habilitada, somente no cache de desenvolvimento. Ela não foi instalada e não deve ser usada como atualização do aplicativo autorizado. Dados pessoais, permissões e sessões atuais foram preservados.
-

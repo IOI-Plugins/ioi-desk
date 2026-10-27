@@ -12,7 +12,9 @@ New-Item -ItemType Directory -Path $stage -Force | Out-Null
 $built=Join-Path $root 'dist/windows'
 if(!(Test-Path -LiteralPath (Join-Path $built 'vendor/deskflow/deskflow-core.exe'))){throw 'Build with the verified Deskflow runtime before packaging.'}
 Copy-Item -Path (Join-Path $built '*') -Destination $stage -Recurse
-Copy-Item -LiteralPath (Join-Path $root 'third-party') -Destination (Join-Path $stage 'third-party') -Recurse
+$thirdParty=Join-Path $stage 'third-party'
+New-Item -ItemType Directory -Path $thirdParty -Force | Out-Null
+Get-ChildItem -LiteralPath (Join-Path $root 'third-party') | Copy-Item -Destination $thirdParty -Recurse -Force
 if(!(Test-Path (Join-Path $stage 'third-party/deskflow-v1.27.0-source.tar.gz'))){throw 'Corresponding Deskflow source archive missing.'}
 Copy-Item -LiteralPath (Join-Path $root 'src/browser') -Destination (Join-Path $stage 'BrowserExtension') -Recurse
 Add-Type -AssemblyName System.Drawing

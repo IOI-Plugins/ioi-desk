@@ -25,6 +25,7 @@ static class Program {
         Application.SetCompatibleTextRenderingDefault(false);
         if(args.Length==2&&args[0]=="--data-migration-test"){try{AppPaths.Test(args[1]);}catch(Exception ex){File.WriteAllText(args[1],"FAIL: "+ex);Environment.ExitCode=1;}return;}
         if(args.Length==2&&args[0]=="--layout-persistence-test"){try{LayoutPersistenceTest.Run(args[1]);}catch(Exception ex){File.WriteAllText(args[1],"FAIL: "+ex);Environment.ExitCode=1;}return;}
+        if(args.Length==2&&args[0]=="--update-test"){try{DeskUpdates.Test(args[1]);}catch(Exception ex){File.WriteAllText(args[1],"FAIL: "+ex);Environment.ExitCode=1;}return;}
         if(args.Length==2&&args[0]=="--virtual-left"){try{DisplayModes.MoveVirtualLeft(args[1]);}catch(Exception ex){File.AppendAllText(args[1],Environment.NewLine+"FAIL: "+ex);Environment.ExitCode=1;}return;}
         if(args.Length==2&&args[0]=="--input-safety-test"){InputSafety.Test();File.WriteAllText(args[1],"PASS: middle-button rising edge and raw-input flags; polling fallback does not depend on the mouse hook.");return;}
         if(args.Length==2&&args[0]=="--trace-test"){TraceLog.Test(args[1]);return;}

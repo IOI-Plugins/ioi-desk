@@ -6,6 +6,7 @@ import ApplicationServices
 final class AppController: NSObject, NSApplicationDelegate {
     let directory=AppPaths.workspace
     let workspace=WorkspaceController()
+    let updates=DeskUpdates()
     var window:NSWindow!
     var pickers:[(UInt32,NSPopUpButton)]=[]
     var state=NSTextField(labelWithString:"")
@@ -17,6 +18,7 @@ final class AppController: NSObject, NSApplicationDelegate {
     let login=NSButton(checkboxWithTitle:"Abrir IOI Desk ao iniciar a sessão",target:nil,action:nil)
     func applicationDidFinishLaunching(_ notification:Notification) {
         let menu=NSMenu(); let appItem=NSMenuItem(); let appMenu=NSMenu()
+        updates.addMenu(to:appMenu)
         let quit=NSMenuItem(title:"Encerrar IOI Desk",action:#selector(stopAll),keyEquivalent:"q");quit.target=self;appMenu.addItem(quit);appItem.submenu=appMenu;menu.addItem(appItem);NSApp.mainMenu=menu
         window=NSWindow(contentRect:NSRect(x:0,y:0,width:740,height:900),styleMask:[.titled,.closable,.miniaturizable,.resizable],backing:.buffered,defer:false)
         window.minSize=NSSize(width:680,height:880)
@@ -56,6 +58,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         timer=Timer.scheduledTimer(withTimeInterval:2,repeats:true){[weak self] _ in self?.refresh()}
         start()
         if FileManager.default.fileExists(atPath:connection.directory.appendingPathComponent("enabled.txt").path){connect()}
+        updates.start()
     }
     func label(_ text:String,x:Int,y:Int,w:Int,h:Int,size:CGFloat,bold:Bool=false){
         let label=NSTextField(wrappingLabelWithString:text);label.font=bold ? .boldSystemFont(ofSize:size):.systemFont(ofSize:size);label.frame=NSRect(x:x,y:y,width:w,height:h);window.contentView?.addSubview(label)
