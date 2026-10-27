@@ -34,7 +34,8 @@ command(['security','import',str(certificate),'-P',os.environ['MACOS_CERTIFICATE
 command(['security','set-key-partition-list','-S','apple-tool:,apple:','-k',keychain_password,str(keychain)])
 certificate.unlink()
 probe=temporary/'ioi-signing-probe'
-shutil.copy2('/usr/bin/true',probe)
+shutil.copyfile('/usr/bin/true',probe)
+probe.chmod(0o700)
 command(['codesign','--force','--timestamp','--sign','01888205A54DCB53AE5FF7F6437F6F95893005B7',str(probe)])
 command(['codesign','--verify','--strict',str(probe)])
 probe.unlink()

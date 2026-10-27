@@ -8,7 +8,21 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  source:
+    if: github.repository == 'IOI-Plugins/ioi-desk'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require release source from main and matching version
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          python3 -c 'import json,os; r=json.load(open("release.json")); assert os.environ["GITHUB_REF_NAME"]=="v"+r["version"], "Tag/version mismatch"'
   validate:
+    needs: source
     if: github.repository == 'IOI-Plugins/ioi-desk'
     runs-on: ubuntu-24.04
     permissions:
@@ -41,7 +55,7 @@ jobs:
           alerts=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/code-scanning/alerts?state=open&per_page=100" | jq '[.[][] | select(.rule.security_severity_level == "critical" or .rule.security_severity_level == "high")] | length')
           if [ "$alerts" != 0 ]; then echo 'Open high/critical code-scanning alerts block publication'; exit 1; fi
   windows:
-    needs: validate
+    needs: source
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
@@ -65,7 +79,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
   macos:
-    needs: validate
+    needs: source
     runs-on: macos-15
     timeout-minutes: 40
     environment: release
@@ -108,7 +122,7 @@ jobs:
         if: always()
         run: security delete-keychain "$RUNNER_TEMP/ioi-release.keychain-db" || true
   publish:
-    needs: [windows, macos]
+    needs: [validate, windows, macos]
     runs-on: macos-15
     timeout-minutes: 35
     environment: release

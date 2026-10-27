@@ -1,7 +1,7 @@
 {
   "product": "IOI Desk",
-  "version": "0.4.3",
-  "build": 11,
+  "version": "0.4.4",
+  "build": 12,
   "channel": "stable",
   "macBundleIdentifier": "com.ioi.desk.settings",
   "deskflowVersion": "1.27.0",
