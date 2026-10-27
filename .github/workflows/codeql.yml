@@ -1,0 +1,65 @@
+name: CodeQL
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '23 8 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  analyze:
+    if: github.event.repository.private == false
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: csharp
+            os: windows-2022
+            build: manual
+          - language: swift
+            os: macos-15
+            build: manual
+          - language: javascript-typescript
+            os: ubuntu-24.04
+            build: none
+          - language: python
+            os: ubuntu-24.04
+            build: none
+          - language: actions
+            os: ubuntu-24.04
+            build: none
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build }}
+      - if: matrix.language == 'csharp'
+        shell: pwsh
+        run: ./tools/build-windows.ps1
+      - if: matrix.language == 'swift'
+        env:
+          IOI_ALLOW_ADHOC: '1'
+          IOI_DESKFLOW_APP: ${{ github.workspace }}/vendor/Deskflow.app
+          IOI_DESK_DATA_ROOT: ${{ runner.temp }}/ioi-codeql-tests
+        run: |
+          python3 tools/fetch-deskflow.py
+          python3 tools/fetch-deskflow-source.py
+          sh tools/build-macos.sh
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        with:
+          category: /language:${{ matrix.language }}

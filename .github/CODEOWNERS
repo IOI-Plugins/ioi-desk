@@ -1,0 +1,6 @@
+# Changes to security gates require repository-owner review when branch rules enforce it.
+/.github/ @adenisdesa
+/tools/security-* @adenisdesa
+/tools/*notari* @adenisdesa
+/tools/signing.sh @adenisdesa
+/tools/verify-update.sh @adenisdesa
