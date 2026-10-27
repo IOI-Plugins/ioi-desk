@@ -11,6 +11,10 @@ jobs:
   validate:
     if: github.repository == 'IOI-Plugins/ioi-desk'
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      security-events: read
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -23,14 +27,19 @@ jobs:
         run: |
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           python3 -c 'import json,os; r=json.load(open("release.json")); assert os.environ["GITHUB_REF_NAME"]=="v"+r["version"], "Tag/version mismatch"'
-          for attempt in $(seq 1 40); do
-            echo "Checking CI result: attempt $attempt/40"
-            state=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$GITHUB_SHA" --json status,conclusion --jq '.[0] | if .status == "completed" then .conclusion else "waiting" end')
-            if [ "$state" = success ]; then exit 0; fi
-            if [ "$state" != waiting ] && [ -n "$state" ] && [ "$state" != null ]; then echo 'CI rejected this release commit'; exit 1; fi
-            sleep 15
+          for workflow in ci.yml codeql.yml; do
+            approved=false
+            for attempt in $(seq 1 40); do
+              echo "Checking $workflow: attempt $attempt/40"
+              state=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" --commit "$GITHUB_SHA" --json status,conclusion --jq '.[0] | if .status == "completed" then .conclusion else "waiting" end')
+              if [ "$state" = success ]; then approved=true; break; fi
+              if [ "$state" != waiting ] && [ -n "$state" ] && [ "$state" != null ]; then echo 'Required checks rejected this commit'; exit 1; fi
+              sleep 15
+            done
+            if [ "$approved" != true ]; then echo 'No successful checks for this exact commit'; exit 1; fi
           done
-          echo 'No successful CI for this exact commit'; exit 1
+          alerts=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/code-scanning/alerts?state=open&per_page=100" --jq '[.[][] | select(.rule.security_severity_level == "critical" or .rule.security_severity_level == "high")] | length')
+          if [ "$alerts" != 0 ]; then echo 'Open high/critical code-scanning alerts block publication'; exit 1; fi
   windows:
     needs: validate
     runs-on: windows-2022
