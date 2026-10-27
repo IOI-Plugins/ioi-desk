@@ -38,6 +38,11 @@ if [ -z "${IOI_DESKFLOW_APP:-}" ] || [ ! -d "$IOI_DESKFLOW_APP" ]; then
 fi
 ditto "$IOI_DESKFLOW_APP" "$app/Contents/Helpers/Deskflow.app"
 cp release.json "$app/Contents/Resources/release.json"
+for notice in LICENSE NOTICE TRADEMARKS.md; do
+  cp "$root/$notice" "$app/Contents/Resources/$notice"
+done
+mkdir -p "$app/Contents/Resources/assets"
+cp "$root/assets/BRAND.md" "$app/Contents/Resources/assets/BRAND.md"
 ditto "$root/third-party" "$app/Contents/Resources/ThirdParty"
 ditto "$root/src/browser" "$app/Contents/Resources/BrowserExtension"
 ioi_sign_app "$app" "$root/assets/Entitlements.plist"

@@ -8,3 +8,7 @@ Geometria preservada. Por solicitação expressa do proprietário em 26/10/2026,
 esta aplicação usa azul `#3B82F6` em lugar do verde histórico.
 Essa decisão se aplica ao Desk e não modifica o manual histórico da marca.
 O SVG é o fonte dos ícones Windows e Mac. Não adicionar gradientes ao símbolo.
+
+O símbolo e os ícones são arte da marca com direitos reservados a Adenis R. Sá;
+a licença MIT do código não concede direitos sobre essa arte nem endosso.
+Usos permitidos e identificação de derivados: [TRADEMARKS.md](../TRADEMARKS.md).

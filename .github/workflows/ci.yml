@@ -21,6 +21,7 @@ jobs:
           persist-credentials: false
       - run: python3 tools/security-policy.py --self-test
       - run: python3 tools/security-policy.py
+      - run: python3 tools/check-licenses.py
       - run: python3 tools/security-download.py
       - name: Scan full Git history for secrets (redacted)
         run: work/security-tools/gitleaks git --log-opts="--all --full-history" --redact=100 --ignore-gitleaks-allow --no-banner --no-color .

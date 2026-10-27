@@ -1,0 +1,27 @@
+IOI Desk
+Seu espaço de trabalho integrado.
+
+Copyright (c) 2026 Adenis R. Sá and IOI Desk contributors.
+Part of the IOI family. Canonical signature: |□|
+Original contributions remain attributable to their respective authors.
+
+The original IOI Desk source code and documentation are licensed under MIT,
+as reproduced in LICENSE. The IOI name, logo artwork and visual identifiers
+are governed separately by TRADEMARKS.md and assets/BRAND.md. No trademark
+license or endorsement is granted by the source-code license.
+
+This license applies to IOI Desk only. It does not relicense IOI Runtime,
+IOI Platform, other IOI products, or their proprietary source code.
+
+Deskflow is an independent third-party executable by the Deskflow project
+and its contributors, distributed without renaming its executables or
+claiming its authorship. Deskflow 1.27.0 retains its declared
+GPL-2.0-only WITH LicenseRef-OpenSSL-Exception license. See third-party/ for
+the preserved license, exception, provenance and corresponding source.
+The original vendor packages retain the notices for their own dependencies.
+The MIT license of IOI Desk does not replace any of those terms.
+
+The IOI symbol originates from adenisdesa/ioi-arca,
+commit 1433de381b3916a35771e0d96e923ebe9913bf83,
+_historico/ioi-package-marca/ioi-symbol-positive.svg. Its geometry is preserved;
+the blue Desk variant was authorized by the owner on 2026-10-26.

@@ -36,3 +36,15 @@ O IOI Desk está em desenvolvimento para Windows e macOS. A distribuição para 
 - [Identidade visual](assets/BRAND.md)
 
 O compartilhamento de mouse e teclado utiliza o componente original [Deskflow](https://github.com/deskflow/deskflow). Seus créditos e licenças estão preservados em [third-party](third-party/).
+
+## Parte da família IOI
+
+O IOI Desk leva a identidade IOI ao espaço de trabalho entre Windows e Mac.
+A família IOI também inclui ferramentas de contexto, memória, rastreabilidade
+e continuidade do trabalho de agentes. O Desk compartilha essa origem e
+identidade; o CLI e os outros produtos têm seus próprios recursos e licenças.
+
+**Código próprio sob [MIT](LICENSE)**, com uso e comercialização permitidos
+e preservação dos avisos de autoria. A marca e o logotipo IOI têm direitos
+reservados conforme [TRADEMARKS.md](TRADEMARKS.md). A autoria, a origem do
+símbolo e os créditos dos componentes estão em [NOTICE](NOTICE).

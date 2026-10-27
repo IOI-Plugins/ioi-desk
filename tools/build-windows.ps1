@@ -20,4 +20,7 @@ if($IncludeRuntime){
     if(Test-Path -LiteralPath $settings){Set-Content -LiteralPath $settings -Value "[log]`nlevel=Info`n" -Encoding UTF8}
 }
 Copy-Item -LiteralPath (Join-Path $root 'release.json') -Destination $destination -Force
+foreach($notice in @('LICENSE','NOTICE','TRADEMARKS.md')){Copy-Item -LiteralPath (Join-Path $root $notice) -Destination $destination -Force}
+New-Item -ItemType Directory -Path (Join-Path $destination 'assets') -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $root 'assets/BRAND.md') -Destination (Join-Path $destination 'assets/BRAND.md') -Force
 Write-Output "IOI Desk $($release.version): $destination"
