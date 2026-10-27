@@ -1,5 +1,13 @@
 # Histórico de versões
 
+## 0.4.4 · Seu ambiente sempre atualizado
+
+- Atualizações pelo próprio aplicativo, com Sparkle no Mac e WinSparkle no Windows.
+- Instalador Windows com atalhos e remoção que preserva dados e layouts.
+- Distribuição Mac assinada e notarizada pela Apple.
+- Canal público de downloads com pacotes e feeds assinados.
+
+
 ## 0.3.0 · Base unificada
 
 - **Um aplicativo no Mac:** configurações, zonas, seleção de janelas e conexão pertencem ao mesmo processo IOI Desk. Camadas.app e a interface antiga de conexão foram eliminados da nova estrutura.

@@ -5,10 +5,19 @@ alteração em main e pull request. O Mac usa assinatura ad hoc somente no
 runner descartável; esses binários não são oferecidos como atualização.
 As Actions estão fixadas por SHA. Não há certificado ou chave no repositório.
 
-O pipeline de testes não é um atualizador automático do aplicativo.
-Publicação assinada e notarizada ainda exige configurar o ambiente de release.
-A chave Apple existente permanece no chaveiro do proprietário. Não exportar
-essa chave nem publicar builds ad hoc como atualização do app autorizado.
+O workflow Publish signed release distribui pacotes pelas tags vVERSAO de
+commits aprovados em main. Exige testes e CodeQL no mesmo commit e bloqueia
+alertas altos ou críticos. As releases ficam disponíveis publicamente no GitHub.
+
+O ambiente release permite apenas tags v*. Certificado Developer ID exportado
+como PKCS12 criptografado, sua senha, credenciais de notarização e chave de
+atualização ficam em GitHub Secrets. A importação usa o procedimento nativo
+documentado pelo GitHub num chaveiro descartável, com teste de assinatura antes
+do build. Certificados e senhas nunca integram o código nem os pacotes.
+
+Sparkle no Mac e WinSparkle no Windows verificam os pacotes assinados.
+Consulte [AUTO-UPDATES.md](AUTO-UPDATES.md) para comportamento, instalação
+inicial e manutenção do canal. Artefatos de testes não substituem uma release.
 
 Windows: tools/build-windows.ps1 e tools/test-windows.ps1.
 O executável produzido não possui assinatura Authenticode. Para um pacote

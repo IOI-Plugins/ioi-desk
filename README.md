@@ -25,7 +25,11 @@ Deixe o editor e os terminais no centro do trabalho. Mantenha agendas, conversas
 
 ## Disponibilidade
 
-O IOI Desk está em desenvolvimento para Windows e macOS. A distribuição para instalação está sendo preparada; ainda não há um instalador público de lançamento. Compatibilidade de aplicativos e recursos em validação estão documentados nos links abaixo.
+[Baixe o IOI Desk para Windows ou Mac](https://github.com/IOI-Plugins/ioi-desk/releases/latest).
+
+No Windows, escolha o instalador `windows-x64-setup.exe`. No Mac com Apple Silicon, baixe o ZIP `macos-arm64` e mova o IOI Desk para Aplicativos. O pacote Mac é assinado e notarizado pela Apple. O instalador Windows ainda pode exibir o aviso do SmartScreen.
+
+Após essa primeira instalação, use **Verificar atualizações…** no aplicativo. As próximas versões são distribuídas pelo próprio IOI Desk, preservando seus dados e layouts. [Como funcionam as atualizações](docs/AUTO-UPDATES.md).
 
 ## Conheça o projeto
 

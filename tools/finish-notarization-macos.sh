@@ -19,7 +19,13 @@ if result.get('status')!='Accepted':
     raise SystemExit('Notarization not accepted: '+str(result.get('status')))
 PY
 codesign --verify --deep --strict "$app"
-xcrun stapler staple "$app"
+attempt=1
+until xcrun stapler staple "$app"; do
+  if [ "$attempt" -ge 3 ]; then echo 'Apple ticket delivery failed after three attempts.' >&2; exit 1; fi
+  echo "Retrying Apple ticket delivery after attempt $attempt/3" >&2
+  attempt=$((attempt+1))
+  sleep 10
+done
 xcrun stapler validate "$app"
 spctl --assess --type execute --verbose=2 "$app"
 version=$(python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); print(r["version"]+"-"+str(r["build"]))' "$root/release.json")

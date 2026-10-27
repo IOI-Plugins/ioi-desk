@@ -1,3 +1,18 @@
+# Validação de distribuição · 0.4.4
+
+- Release pública: https://github.com/IOI-Plugins/ioi-desk/releases/tag/v0.4.4
+- Build and test 40438864354 e CodeQL 40438864096 aprovados no commit da release.
+- Publish signed release 40438886575 aprovado: Windows, Mac e publicação.
+- Windows: onze testes, geração NSIS e instalação/remoção em ambiente isolado aprovados, com dados preservados.
+- Mac: assinatura Developer ID real, notarização aceita, ticket anexado, validação do ticket e Gatekeeper aprovados no runner.
+- Sparkle/WinSparkle: feeds e pacotes assinados e verificados pelas ferramentas originais antes da publicação.
+- Downloads e feeds públicos responderam HTTP 200 sem autenticação; SHA256SUMS coincide com os digests dos assets no GitHub.
+- Não foi simulada uma atualização entre duas releases com updater: esta é a primeira versão pública que o inclui. A primeira instalação continua necessária.
+
+A entrega do ticket Apple perdeu a conexão na primeira tentativa; repetir o job no mesmo commit concluiu com sucesso. O script de finalização passa a repetir essa operação até três vezes para próximas releases, mantendo todas as validações obrigatórias.
+
+## Histórico da base anterior
+
 # Validação da refatoração · 26/10/2026
 
 ## Distribuição: verificações adicionais
