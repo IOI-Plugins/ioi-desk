@@ -11,6 +11,7 @@ final class AppController: NSObject, NSApplicationDelegate {
     var pickers:[(UInt32,NSPopUpButton)]=[]
     var state=NSTextField(labelWithString:"")
     var timer:Timer?
+    var resumeTimer:Timer?
     var busy=false
     var badges:[NSPanel]=[]
     let connection=DeskConnection()
@@ -59,6 +60,9 @@ final class AppController: NSObject, NSApplicationDelegate {
         start()
         if FileManager.default.fileExists(atPath:connection.directory.appendingPathComponent("enabled.txt").path){connect()}
         updates.start()
+        let center=NSWorkspace.shared.notificationCenter
+        center.addObserver(self,selector:#selector(resumeConnection),name:NSWorkspace.didWakeNotification,object:nil)
+        center.addObserver(self,selector:#selector(resumeConnection),name:NSWorkspace.sessionDidBecomeActiveNotification,object:nil)
     }
     func label(_ text:String,x:Int,y:Int,w:Int,h:Int,size:CGFloat,bold:Bool=false){
         let label=NSTextField(wrappingLabelWithString:text);label.font=bold ? .boldSystemFont(ofSize:size):.systemFont(ofSize:size);label.frame=NSRect(x:x,y:y,width:w,height:h);window.contentView?.addSubview(label)
@@ -130,10 +134,16 @@ final class AppController: NSObject, NSApplicationDelegate {
             pickers.forEach{$0.1.selectItem(at:0)}
         }catch{alert("Não foi possível aplicar o layout: \(error.localizedDescription)")}
     }
-    @objc func connect(){connection.start()}
+    @objc func connect(){connection.reconnect()}
+    @objc func resumeConnection(_ note:Notification){
+        resumeTimer?.invalidate();resumeTimer=Timer.scheduledTimer(withTimeInterval:1,repeats:false){[weak self] _ in
+            guard let self,FileManager.default.fileExists(atPath:self.connection.directory.appendingPathComponent("enabled.txt").path) else{return}
+            self.connection.reconnect()
+        }
+    }
     @objc func disconnect(){connection.stop(disable:true)}
     @objc func connectionLogs(){try? FileManager.default.createDirectory(at:connection.directory.appendingPathComponent("Logs"),withIntermediateDirectories:true);NSWorkspace.shared.open(connection.directory.appendingPathComponent("Logs"))}
-    func applicationWillTerminate(_ notification:Notification){timer?.invalidate();connection.stop(disable:false);workspace.stop()}
+    func applicationWillTerminate(_ notification:Notification){timer?.invalidate();resumeTimer?.invalidate();NSWorkspace.shared.notificationCenter.removeObserver(self);connection.stop(disable:false);workspace.stop()}
     @objc func stopAll(){NSApp.terminate(nil)}
 }
 

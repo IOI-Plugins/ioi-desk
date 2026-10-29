@@ -13,6 +13,7 @@ static class Program {
     static System.Threading.EventWaitHandle showWorkspace;
     public static bool ConsumeShowRequest(){return showWorkspace!=null&&showWorkspace.WaitOne(0);}
     [STAThread] static void Main(string[] args) {
+        if(args.Length==2&&args[0]=="--connection-fixture"){ConnectionLifecycleTest.Child(args[1]);return;}
         bool workspace=args.Length==0||(args.Length==1&&(args[0]=="--zones"||args[0]=="--apply"||args[0]=="--organize"));
         if(workspace){
             bool created;workspaceMutex=new System.Threading.Mutex(true,"Local\\IOI.Desk.Workspace",out created);
@@ -23,6 +24,10 @@ static class Program {
         Native.SetProcessDPIAware();
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
+        if(args.Length==2&&(args[0]=="--connection-lifecycle-test"||args[0]=="--presentation-motion-test")){
+            try{if(args[0]=="--connection-lifecycle-test")ConnectionLifecycleTest.Run(args[1]);else PresentationMotionTest.Run(args[1]);}
+            catch(Exception ex){File.WriteAllText(args[1],"FAIL: "+ex);Environment.ExitCode=1;}return;
+        }
         if(args.Length==2&&args[0]=="--data-migration-test"){try{AppPaths.Test(args[1]);}catch(Exception ex){File.WriteAllText(args[1],"FAIL: "+ex);Environment.ExitCode=1;}return;}
         if(args.Length==2&&args[0]=="--layout-persistence-test"){try{LayoutPersistenceTest.Run(args[1]);}catch(Exception ex){File.WriteAllText(args[1],"FAIL: "+ex);Environment.ExitCode=1;}return;}
         if(args.Length==2&&args[0]=="--update-test"){try{DeskUpdates.Test(args[1]);}catch(Exception ex){File.WriteAllText(args[1],"FAIL: "+ex);Environment.ExitCode=1;}return;}

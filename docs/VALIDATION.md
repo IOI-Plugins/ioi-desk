@@ -1,3 +1,10 @@
+# Correções de controle e reconexão · 0.4.5
+
+- Treze testes Windows aprovados em dados isolados. O teste novo de ciclo de vida inicia e encerra duas vezes um processo próprio usando uma porta de loopback, verificando sua liberação antes da substituição.
+- Regressões de entrada cobrem botões, arrasto/captura nativos, coordenadas reais após arrasto, origem negativa, limite superior e descarte de saída atrasada após reentrada.
+- O build de teste Mac passou geometria, layout, migração e configuração Sparkle, sem substituir o app instalado e sem alterar permissões.
+- O travamento intermitente durante uma apresentação longa ainda não foi reproduzido de forma determinística. Estas verificações não equivalem a uma reunião real de 15 minutos. Os novos eventos locais permitem identificar falha de captura, interação nativa e saída de segurança.
+
 # Validação de distribuição · 0.4.4
 
 - Release pública: https://github.com/IOI-Plugins/ioi-desk/releases/tag/v0.4.4

@@ -59,7 +59,7 @@ class InputHost : NativeWindow,IDisposable {
     protected override void WndProc(ref Message message){if(message.Msg==0x0312){PanelInput.Toggle(message.WParam.ToInt32()==2);return;}if(message.Msg==0x113&&message.WParam.ToInt32()==77){KillTimer(Handle,new UIntPtr(77));Action action=testTick;testTick=null;if(action!=null)action();return;}base.WndProc(ref message);}
     IntPtr MouseHook(int code,IntPtr message,IntPtr data) {
         if(code>=0) {
-            if(MiddleButton.IsDown(message.ToInt32())&&PanelInput.Active!=null){reserveUp=true;MouseExitNative.PostMessage(PanelInput.Active.Handle,0x8002,IntPtr.Zero,IntPtr.Zero);return new IntPtr(1);}
+            if(MiddleButton.IsDown(message.ToInt32())&&PanelInput.Active!=null){reserveUp=true;MouseExitNative.PostMessage(PanelInput.Active.Handle,0x8002,IntPtr.Zero,new IntPtr(InputSafety.Token));return new IntPtr(1);}
             if(MiddleButton.IsUp(message.ToInt32())&&reserveUp){reserveUp=false;return new IntPtr(1);}
         }
         return MouseExitNative.CallNextHookEx(mouseHook,code,message,data);

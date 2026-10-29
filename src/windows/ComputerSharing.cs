@@ -22,6 +22,7 @@ sealed class SharingForm : Form {
     readonly Label status=new Label();
     readonly Timer check=new Timer{Interval=1000};
     Process engine;
+    bool wanted;int retries;DateTime retryAt=DateTime.MinValue;
     string data {get{return ComputerSharing.Data;}}
     public SharingForm():this(true){}
     public SharingForm(bool keepInTray){
@@ -32,14 +33,16 @@ sealed class SharingForm : Form {
         Controls.Add(new Label{Text="O Mac fica:",Location=new Point(20,118),Size=new Size(104,26)});
         side.DropDownStyle=ComboBoxStyle.DropDownList;side.Items.AddRange(new object[]{"À direita do Windows","À esquerda do Windows"});side.SetBounds(126,114,255,30);Controls.Add(side);
         side.SelectedIndex=File.Exists(Path.Combine(data,"side.txt"))&&File.ReadAllText(Path.Combine(data,"side.txt")).Trim()=="left"?1:0;
-        side.SelectedIndexChanged+=delegate{bool running=engine!=null&&!engine.HasExited;if(running)StopConnection(false);SaveConfiguration();if(running)StartConnection();};
-        Button connect=new Button{Text="Conectar",Location=new Point(20,160),Size=new Size(145,34)};connect.Click+=delegate{StartConnection();};Controls.Add(connect);
+        side.SelectedIndexChanged+=delegate{bool running=engine!=null&&!engine.HasExited;if(running&&!StopConnection(false))return;SaveConfiguration();if(running)StartConnection();};
+        Button connect=new Button{Text="Conectar",Location=new Point(20,160),Size=new Size(145,34)};connect.Click+=delegate{Reconnect();};Controls.Add(connect);
         Button stop=new Button{Text="Desconectar",Location=new Point(178,160),Size=new Size(145,34)};stop.Click+=delegate{StopConnection(true);};Controls.Add(stop);
         Button logs=new Button{Text="Diagnóstico",Location=new Point(336,160),Size=new Size(145,34)};logs.Click+=delegate{Directory.CreateDirectory(TraceLog.Folder);Process.Start(new ProcessStartInfo(TraceLog.Folder){UseShellExecute=true});};Controls.Add(logs);
         status.SetBounds(20,206,490,64);status.Text="Ctrl + Alt + →: Mac · Ctrl + Alt + ←: Windows\nA conexão exige que o IOI Desk também esteja aberto no Mac.";Controls.Add(status);
-        check.Tick+=delegate{if(engine!=null&&engine.HasExited){int code=engine.ExitCode;TraceLog.Write("deskflow.exit","","code",code.ToString());engine.Dispose();engine=null;check.Stop();SetStatus("Componente do Windows encerrado · código "+code+". Consulte Diagnóstico.");}};
+        check.Tick+=CheckConnection;
+        Microsoft.Win32.SystemEvents.PowerModeChanged+=PowerChanged;
+        Microsoft.Win32.SystemEvents.SessionSwitch+=SessionChanged;
         FormClosing+=delegate(object sender,FormClosingEventArgs e){if(keepInTray&&e.CloseReason==CloseReason.UserClosing){e.Cancel=true;Hide();}};
-        FormClosed+=delegate{StopConnection(false);check.Dispose();};
+        FormClosed+=delegate{Microsoft.Win32.SystemEvents.PowerModeChanged-=PowerChanged;Microsoft.Win32.SystemEvents.SessionSwitch-=SessionChanged;StopConnection(false);check.Dispose();};
         // Create the handle on the UI thread before output callbacks arrive.
         IntPtr handle=Handle;
     }
@@ -58,30 +61,59 @@ sealed class SharingForm : Form {
         settings+="[computer_IOI-Windows]\nname=IOI-Windows\n[computer_IOI-Mac-mini]\nname=IOI-Mac-mini\n";
         File.WriteAllText(Path.Combine(data,"Deskflow.conf"),settings);
     }
+    public void Reconnect(){
+        TraceLog.Write("deskflow.reconnect.request","","running",(engine!=null&&!engine.HasExited).ToString());
+        if(!StopConnection(false))return;
+        retries=0;StartConnection();
+    }
+    void ResumeConnection(){if(IsDisposed||!IsHandleCreated||!wanted)return;BeginInvoke((Action)delegate{if(wanted)Reconnect();});}
+    void PowerChanged(object sender,Microsoft.Win32.PowerModeChangedEventArgs e){if(e.Mode==Microsoft.Win32.PowerModes.Resume)ResumeConnection();}
+    void SessionChanged(object sender,Microsoft.Win32.SessionSwitchEventArgs e){if(e.Reason==Microsoft.Win32.SessionSwitchReason.SessionUnlock)ResumeConnection();}
+    void CheckConnection(object sender,EventArgs args){
+        if(!wanted)return;
+        if(engine!=null&&engine.HasExited){
+            TraceLog.Write("deskflow.exit","","code",engine.ExitCode.ToString());
+            engine.Dispose();engine=null;PlanRetry();
+        }
+        if(engine==null&&DateTime.UtcNow>=retryAt)StartConnection();
+    }
+    void PlanRetry(){
+        retries=Math.Min(retries+1,5);int seconds=Math.Min(30,1<<retries);
+        retryAt=DateTime.UtcNow.AddSeconds(seconds);
+        TraceLog.Write("deskflow.retry.scheduled","","seconds",seconds.ToString());
+        SetStatus("Conexão interrompida. Nova tentativa em "+seconds+" segundos.");check.Start();
+    }
     public void StartConnection(){
         if(engine!=null&&!engine.HasExited){SetStatus("Conexão já iniciada. Aguardando ou conectado ao Mac mini.");return;}
-        if(!File.Exists(Path.Combine(data,"tls","deskflow.pem"))||!File.Exists(Path.Combine(data,"tls","trusted-clients"))){SetStatus("O pareamento deste computador ainda precisa ser concluído.");return;}
+        bool certificate=File.Exists(Path.Combine(data,"tls","deskflow.pem")),trust=File.Exists(Path.Combine(data,"tls","trusted-clients"));
+        if(!certificate||!trust){wanted=false;check.Stop();TraceLog.Write("deskflow.pairing.missing","","data",data,"certificate",certificate.ToString(),"trust",trust.ToString());SetStatus("Não encontrei o pareamento salvo. Abra Diagnóstico para conferir o local das configurações.");return;}
+        wanted=true;
         try{
             SaveConfiguration();
             ProcessStartInfo info=new ProcessStartInfo(Path.Combine(ComputerSharing.EngineFolder,"deskflow-core.exe"),"server -s \""+Path.Combine(data,"Deskflow.conf")+"\"");
             info.WorkingDirectory=ComputerSharing.EngineFolder;info.UseShellExecute=false;info.CreateNoWindow=true;info.RedirectStandardOutput=true;info.RedirectStandardError=true;
-            engine=new Process{StartInfo=info};engine.OutputDataReceived+=Log;engine.ErrorDataReceived+=Log;engine.Start();engine.BeginOutputReadLine();engine.BeginErrorReadLine();
+            engine=new Process{StartInfo=info};engine.OutputDataReceived+=Log;engine.ErrorDataReceived+=Log;engine.Start();engine.BeginOutputReadLine();engine.BeginErrorReadLine();TraceLog.Write("deskflow.start","","pid",engine.Id.ToString(),"data",data);
             File.WriteAllText(Path.Combine(data,"enabled.txt"),"true");
             check.Start();SetStatus("Aguardando o Mac mini · conexão criptografada.\nCtrl + Alt + →: Mac · Ctrl + Alt + ←: Windows");
-        }catch(Exception ex){if(engine!=null){engine.Dispose();engine=null;}SetStatus("Não foi possível conectar: "+ex.Message);}
+        }catch(Exception ex){TraceLog.Write("deskflow.start.failed","","error",ex.Message);if(engine!=null&&OwnedProcess.Stop(engine,1500)){engine.Dispose();engine=null;}SetStatus("Não foi possível conectar: "+ex.Message);if(engine==null)PlanRetry();}
     }
     void SetStatus(string text){if(IsDisposed)return;if(InvokeRequired){try{BeginInvoke((Action)delegate{SetStatus(text);});}catch(InvalidOperationException){}return;}status.Text=text;}
     void Log(object sender,DataReceivedEventArgs args){
-        if(args.Data==null)return;TraceLog.Write("deskflow.output","","message",args.Data);
+        if(args.Data==null||sender!=engine)return;
+        if(InvokeRequired){try{BeginInvoke((Action)delegate{if(sender==engine)Log(sender,args);});}catch(InvalidOperationException){}return;}
+        TraceLog.Write("deskflow.output","","message",args.Data);
         string line=args.Data.ToLowerInvariant();
+        if(line.Contains("leaving computer")&&PanelInput.Active!=null)PanelInput.Active.ExitForComputerSwitch();
         if(line.Contains("disconnected"))SetStatus("Mac mini desconectado. Aguardando reconexão.");
-        else if(line.Contains("accepted secure socket"))SetStatus("Conexão segura aceita do Mac mini.\nSe o controle não responder, confira as permissões do IOI Desk no Mac.");
+        else if(line.Contains("accepted secure socket")){retries=0;SetStatus("Conexão segura aceita do Mac mini.\nSe o controle não responder, confira as permissões do IOI Desk no Mac.");}
         else if(line.Contains("has connected"))SetStatus("Mac mini conectado · mouse e teclado disponíveis.\nCtrl + Alt + →: Mac · Ctrl + Alt + ←: Windows");
         else if(line.Contains("failed")||line.Contains("error")||line.Contains("fatal"))SetStatus("A conexão precisa de atenção. Consulte Diagnóstico.");
     }
-    public void StopConnection(bool disable){
+    public bool StopConnection(bool disable){
+        wanted=false;check.Stop();
         if(disable&&File.Exists(Path.Combine(data,"enabled.txt")))File.Delete(Path.Combine(data,"enabled.txt"));
-        if(engine!=null){try{if(!engine.HasExited)engine.Kill();}catch{}engine.Dispose();engine=null;}
-        check.Stop();SetStatus("Desconectado. Mouse e teclado permanecem no Windows.");
+        if(engine!=null){if(!OwnedProcess.Stop(engine,1500)){SetStatus("O componente anterior ainda não encerrou. Tente Reconectar novamente.");return false;}engine.Dispose();engine=null;}
+        TraceLog.Write("deskflow.stopped","","disabled",disable.ToString());
+        check.Stop();SetStatus("Desconectado. Mouse e teclado permanecem no Windows.");return true;
     }
 }

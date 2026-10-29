@@ -8,7 +8,7 @@ $previousData=$env:IOI_DESK_DATA_ROOT
 $env:IOI_DESK_DATA_ROOT=Join-Path $root 'work/test-data/windows'
 $results=@()
 try {
- foreach($name in @('data-migration-test','layout-persistence-test','self-test','profile-test','grid-test','picker-test','drag-test','presentation-test','zone-test','input-safety-test','update-test')) {
+ foreach($name in @('data-migration-test','layout-persistence-test','self-test','profile-test','grid-test','picker-test','drag-test','presentation-test','zone-test','input-safety-test','update-test','connection-lifecycle-test','presentation-motion-test')) {
   $report=Join-Path $reports ($name+'.txt')
   $process=Start-Process -FilePath $Executable -ArgumentList ('--'+$name),('"'+$report+'"') -PassThru -WindowStyle Hidden
   if(!$process.WaitForExit(15000)){throw "Teste $name não terminou em 15 segundos; processo próprio $($process.Id)."}

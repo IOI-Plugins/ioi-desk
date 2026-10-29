@@ -10,6 +10,18 @@ using System.Windows.Forms;
 static class Native {
     [DllImport("user32.dll")] public static extern uint GetRawInputData(IntPtr input,uint command,byte[] data,ref uint size,uint headerSize);
     [DllImport("user32.dll")] public static extern bool ReleaseCapture();
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window,out RectangleRect rectangle);
+    [DllImport("user32.dll")] public static extern bool GetGUIThreadInfo(uint thread,ref GuiThreadInfo info);
+    [StructLayout(LayoutKind.Sequential)] public struct GuiThreadInfo {
+        public uint size,flags;
+        public IntPtr active,focus,capture,menuOwner,moveSize,caret;
+        public RectangleRect caretRect;
+    }
+    public static bool NativeInteraction() {
+        GuiThreadInfo info=new GuiThreadInfo();info.size=(uint)Marshal.SizeOf(info);
+        return GetGUIThreadInfo(0,ref info)&&(info.capture!=IntPtr.Zero||(info.flags&0x1e)!=0);
+    }
     [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr handle,uint message,IntPtr wparam,IntPtr lparam);
     public static bool ListenMouse(IntPtr handle) {MouseNative.DEVICE d=new MouseNative.DEVICE{page=1,usage=2,flags=0x100,target=handle};return MouseNative.RegisterRawInputDevices(new[]{d},1,(uint)Marshal.SizeOf(d));}
     public static void StopMouse() {MouseNative.DEVICE d=new MouseNative.DEVICE{page=1,usage=2,flags=1,target=IntPtr.Zero};MouseNative.RegisterRawInputDevices(new[]{d},1,(uint)Marshal.SizeOf(d));}

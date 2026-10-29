@@ -33,8 +33,10 @@ class Viewer : Form {
     readonly Stopwatch watch=Stopwatch.StartNew();
     Bitmap frame;
     bool controlling,ready,rawReady,failed,pixelView=false;
+    bool nativePointerInteraction;
+    int inputToken;
+    int controlCheckTicks;
     Point returnPoint,focusPoint;
-    double mouseX,mouseY;
     Rectangle imageRect,viewport,capturedBounds;
     DateTime noticeUntil=DateTime.MinValue;
     int ticks,frames;
@@ -134,13 +136,17 @@ class Viewer : Form {
     void SetView(bool pixels) {ReleaseControl();pixelView=pixels;actual.BackColor=pixels?Color.FromArgb(55,76,106):Surface;fit.BackColor=pixels?Surface:Color.FromArgb(55,76,106);canvas.Invalidate();}
     void SessionChanged(object s,Microsoft.Win32.SessionSwitchEventArgs e) {if(!IsDisposed&&IsHandleCreated)BeginInvoke((Action)ReleaseControl);}
     protected override void WndProc(ref Message m) {
-        if(m.Msg==0x8002){ReleaseControl(m.WParam.ToInt32()==2?"emergency-key-poll":m.WParam.ToInt32()==1?"middle-button-poll":"middle-button-hook");Notice("Controle liberado.",5);return;}
+        if(m.Msg==0x8002&&!InputSafety.AcceptExit(m.LParam.ToInt32(),inputToken))return;
+        if(m.Msg==0x8002){ReleaseControl(m.WParam.ToInt32()==3?"capture-ui-timeout":m.WParam.ToInt32()==2?"emergency-key-poll":m.WParam.ToInt32()==1?"middle-button-poll":"middle-button-hook");Notice("Controle liberado.",5);return;}
         if(m.Msg==0x0312) {PanelInput.Toggle(m.WParam.ToInt32()==2);return;}
         if(m.Msg==0x00FF&&controlling&&rawReady) HandleMouse(m.LParam);
         if(m.Msg==0x84) {
             base.WndProc(ref m);
             if(!controlling&&WindowState==FormWindowState.Normal) {
                 Point p=PointToClient(new Point(unchecked((short)(m.LParam.ToInt64()&0xffff)),unchecked((short)((m.LParam.ToInt64()>>16)&0xffff))));
+                // Rendered browser pixels, including its first row of tabs,
+                // must not become this host window's invisible resize strip.
+                if(canvas.Visible&&imageRect.Contains(canvas.PointToClient(PointToScreen(p)))){m.Result=new IntPtr(1);return;}
                 const int grip=5;bool left=p.X<grip,right=p.X>=Width-grip,top=p.Y<grip,bottom=p.Y>=Height-grip;
                 if(left||right||top||bottom)m.Result=new IntPtr(top?(left?13:right?14:12):bottom?(left?16:right?17:15):left?10:11);
             }
@@ -149,19 +155,25 @@ class Viewer : Form {
         base.WndProc(ref m);
     }
     void HandleMouse(IntPtr input) {
+        if(InputSafety.ExitRequested)return;
         uint size=(uint)rawBuffer.Length;uint headerSize=(uint)(IntPtr.Size==8?24:16);
         uint bytes=Native.GetRawInputData(input,0x10000003,rawBuffer,ref size,headerSize);
         if(bytes==uint.MaxValue||bytes<headerSize+24||BitConverter.ToUInt32(rawBuffer,0)!=0)return;
         int offset=(int)headerSize;
-        if(InputSafety.RawMiddleDown(BitConverter.ToUInt16(rawBuffer,offset+4))){ReleaseControl("middle-button-raw");return;}
+        ushort buttons=BitConverter.ToUInt16(rawBuffer,offset+4);
+        if(InputSafety.RawMiddleDown(buttons)){ReleaseControl("middle-button-raw");return;}
         if((BitConverter.ToUInt16(rawBuffer,offset)&1)!=0)return;
         int dx=BitConverter.ToInt32(rawBuffer,offset+12),dy=BitConverter.ToInt32(rawBuffer,offset+16);
         if(dx==0&&dy==0)return;
         double scale=imageRect.Width>0?(double)viewport.Width/imageRect.Width:1;
         double gain=scale*speed.Value/10.0;
-        mouseX=Math.Max(sourceArea.Left,Math.Min(sourceArea.Right-1,mouseX+dx*gain));
-        mouseY=Math.Max(sourceArea.Top,Math.Min(sourceArea.Bottom-1,mouseY+dy*gain));
-        Native.SetCursorPos((int)Math.Round(mouseX),(int)Math.Round(mouseY));
+        Point actual=Cursor.Position;
+        if(!sourceArea.Contains(actual)){ReleaseControl("pointer-left-source",false);return;}
+        bool paused=!PresentationMotion.Compensate(InputSafety.PrimaryButtonDown,Native.NativeInteraction(),buttons);
+        if(paused!=nativePointerInteraction){nativePointerInteraction=paused;TraceLog.Write("control.native-interaction","","paused",paused.ToString(),"cursor",actual.ToString(),"foreground",Native.GetForegroundWindow().ToInt64().ToString());}
+        if(paused)return;
+        Point next=PresentationMotion.Move(actual,dx,dy,gain,sourceArea);
+        Native.SetCursorPos(next.X,next.Y);
     }
     void RefreshBrowsers() {
         browsers.Items.Clear();
@@ -169,6 +181,12 @@ class Viewer : Form {
         if(browsers.Items.Count>0)browsers.SelectedIndex=0;
     }
     void CaptureFrame(object s,EventArgs e) {
+        if(controlling)InputSafety.Pulse();
+        if(controlling&&++controlCheckTicks%15==0){
+            IntPtr foreground=Native.GetForegroundWindow();Native.RectangleRect rect;
+            if(foreground!=IntPtr.Zero&&Native.GetWindowRect(foreground,out rect)&&rect.Right>rect.Left&&rect.Bottom>rect.Top&&!sourceArea.IntersectsWith(Rectangle.FromLTRB(rect.Left,rect.Top,rect.Right,rect.Bottom)))
+                ReleaseControl("focus-left-presentation");
+        }
         if(source==null){control.Enabled=false;Notice("Ative a tela virtual e reabra o IOI Desk.",60);timer.Stop();return;}
         if(!canvas.Visible||WindowState==FormWindowState.Minimized){ReleaseControl();return;}
         if(PanelInput.Active!=null&&PanelInput.Active!=this&&++idleTicks%4!=0)return;
@@ -183,7 +201,7 @@ class Viewer : Form {
             capturedBounds=next;viewport=next;
             captureMs+=watch.ElapsedMilliseconds-start;frames++;failed=false;control.Enabled=ready;canvas.Invalidate();
             if(DateTime.UtcNow>=noticeUntil)status.Visible=false;
-        }catch(Exception ex){ReleaseControl();failed=true;control.Enabled=false;Notice(ex.Message,10);canvas.Invalidate();}
+        }catch(Exception ex){ReleaseControl();if(!failed)TraceLog.Write("capture.failed","","error",ex.Message,"display",SourceDevice);failed=true;control.Enabled=false;Notice(ex.Message,10);canvas.Invalidate();}
     }
     void DrawPreview(object s,PaintEventArgs e) {
         if(frame==null||failed){TextRenderer.DrawText(e.Graphics,"Sua tela virtual aparece aqui",new Font("Segoe UI",15),canvas.ClientRectangle,Muted,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);return;}
@@ -206,22 +224,24 @@ class Viewer : Form {
         returnPoint=canvas.PointToScreen(p);Point destination=Geometry.ToSource(p,imageRect,viewport);
         IntPtr target=Native.GetAncestor(Native.WindowFromPoint(destination),2);uint pid;Native.GetWindowThreadProcessId(target,out pid);
         if(target==IntPtr.Zero||pid==(uint)Process.GetCurrentProcess().Id){Notice("Em Ambiente, escolha o navegador e clique em Aplicar ambiente.",10);return;}
-        PanelInput.Activate(this);
+        Native.ReleaseCapture();canvas.Capture=false;
+        PanelInput.Activate(this);rawReady=Native.ListenMouse(Handle);
         if(!Native.SetForegroundWindow(target)){PanelInput.Clear(this);Notice("O Windows não liberou o foco. Escolha o aplicativo e tente outra vez.",8);return;}
         Rectangle bounds=sourceArea;
         if(!Native.ClipCursor(ref bounds)){PanelInput.Clear(this);Notice("Não foi possível entrar no controle.",7);return;}
-        mouseX=destination.X;mouseY=destination.Y;focusPoint=destination;
-        controlling=true;noticeUntil=DateTime.MinValue;status.Visible=false;header.Height=4;Native.SetCursorPos(destination.X,destination.Y);control.Text="Sair · F8";
+        focusPoint=destination;
+        controlling=true;noticeUntil=DateTime.MinValue;status.Visible=false;header.Visible=false;header.Height=0;Native.SetCursorPos(destination.X,destination.Y);control.Text="Sair · F8";
         Rectangle host=Screen.FromPoint(returnPoint).WorkingArea;
-        InputSafety.Arm(Handle,new Point(Math.Max(host.Left,Math.Min(host.Right-1,returnPoint.X)),Math.Max(host.Top,Math.Min(host.Bottom-1,returnPoint.Y))));
+        inputToken=InputSafety.Arm(Handle,new Point(Math.Max(host.Left,Math.Min(host.Right-1,returnPoint.X)),Math.Max(host.Top,Math.Min(host.Bottom-1,returnPoint.Y))));
         TraceLog.Write("control.entered","","sourceDisplay",SourceDevice,"assignedTitle",assignedWindow==null?"":assignedWindow.Title);
     }
     void ReleaseControl(){ReleaseControl("application");}
-    void ReleaseControl(string reason) {
+    void ReleaseControl(string reason){ReleaseControl(reason,true);}
+    void ReleaseControl(string reason,bool restorePointer) {
         if(!controlling)return;controlling=false;PanelInput.Clear(this);Native.ClipCursor(IntPtr.Zero);
         InputSafety.Clear();TraceLog.Write("control.exited","","source",reason);
         Rectangle host=Screen.FromPoint(returnPoint).WorkingArea;
-        Native.SetCursorPos(Math.Max(host.Left,Math.Min(host.Right-1,returnPoint.X)),Math.Max(host.Top,Math.Min(host.Bottom-1,returnPoint.Y)));control.Text="Entrar · F8";
+        if(restorePointer)Native.SetCursorPos(Math.Max(host.Left,Math.Min(host.Right-1,returnPoint.X)),Math.Max(host.Top,Math.Min(host.Bottom-1,returnPoint.Y)));control.Text="Entrar · F8";
     }
     public void MoveWindow(IntPtr handle,Rectangle bounds) {
         if(handle==IntPtr.Zero||!Native.IsWindow(handle))return;
@@ -283,6 +303,7 @@ class Viewer : Form {
     public int PreferredHeight(int width){return sourceArea.Width>0?(int)Math.Round((width-2)*(double)sourceArea.Height/sourceArea.Width)+2:600;}
     public void SetInputReady(bool value){ready=value;}
     public void ExitFromHub(){ReleaseControl();}
+    public void ExitForComputerSwitch(){ReleaseControl("computer-switch",false);}
     public void EnterFromHub(){ShowSetup(false);EnterControl(new Point(imageRect.X+imageRect.Width/2,imageRect.Y+imageRect.Height/2));}
     void AssignSelected() {
         AssignWindow(browsers.SelectedItem as WindowChoice);
@@ -336,7 +357,7 @@ class Viewer : Form {
         bar.Visible=false;status.Visible=false;header.BringToFront();
         chromeTimer.Interval=150;
         chromeTimer.Tick+=delegate {
-            header.BringToFront();
+            if(setup.Visible)header.BringToFront();
             if(DateTime.UtcNow>=noticeUntil)status.Visible=false;
             // Application pixels never share a hover target with our controls.
             header.Visible=setup.Visible;header.Height=setup.Visible?32:0;

@@ -1,5 +1,14 @@
 # Histórico de versões
 
+## 0.4.5 · Mais estabilidade ao apresentar e reconectar
+
+- Cliques, arrastos de abas e menus usam o movimento nativo, sem reposicionar o ponteiro no meio da interação.
+- A imagem do navegador não disputa cliques com uma borda invisível no topo do painel.
+- Saída de segurança independente da captura, com descarte de mensagens atrasadas de uma sessão anterior.
+- Reconectar substitui a conexão anterior de forma ordenada; retomada após desbloqueio e suspensão no Windows e Mac.
+- Diagnóstico registra transições de controle, falhas de captura e reinícios do componente de conexão.
+
+
 ## 0.4.4 · Seu ambiente sempre atualizado
 
 - Atualizações pelo próprio aplicativo, com Sparkle no Mac e WinSparkle no Windows.
