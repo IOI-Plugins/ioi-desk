@@ -42,6 +42,13 @@ jobs:
         run: |
           ./tools/build-windows.ps1
           ./tools/test-windows.ps1
+      - name: Ensure release verification rejects unsigned development builds
+        shell: pwsh
+        run: |
+          $rejected=$false
+          try { ./tools/verify-authenticode-windows.ps1 -Path dist/windows/IOIDesk.exe -ExpectedPublisher 'IOI' }
+          catch { if($_.Exception.Message -notmatch 'Authenticode rejected .*NotSigned'){throw}; $rejected=$true }
+          if(!$rejected){throw 'Unsigned development build passed the release signature gate.'}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

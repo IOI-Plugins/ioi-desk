@@ -27,7 +27,7 @@ Deixe o editor e os terminais no centro do trabalho. Mantenha agendas, conversas
 
 [Baixe o IOI Desk para Windows ou Mac](https://github.com/IOI-Plugins/ioi-desk/releases/latest).
 
-No Windows, escolha o instalador `windows-x64-setup.exe`. No Mac com Apple Silicon, baixe o ZIP `macos-arm64` e mova o IOI Desk para Aplicativos. O pacote Mac é assinado e notarizado pela Apple. O instalador Windows ainda pode exibir o aviso do SmartScreen.
+No Windows, escolha o instalador `windows-x64-setup.exe`. No Mac com Apple Silicon, baixe o ZIP `macos-arm64` e mova o IOI Desk para Aplicativos. O pacote Mac é assinado e notarizado pela Apple. A distribuição Windows está em transição para assinatura Authenticode; consulte a [Code signing policy](docs/WINDOWS-SIGNING.md). A ativação da identidade de assinatura ainda está pendente.
 
 Após essa primeira instalação, use **Verificar atualizações…** no aplicativo. As próximas versões são distribuídas pelo próprio IOI Desk, preservando seus dados e layouts. [Como funcionam as atualizações](docs/AUTO-UPDATES.md).
 

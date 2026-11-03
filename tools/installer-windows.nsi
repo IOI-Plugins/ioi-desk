@@ -3,6 +3,13 @@ Unicode true
 !include LogicLib.nsh
 !include FileFunc.nsh
 Name "IOI Desk"
+VIProductVersion "${VERSION}.0"
+VIAddVersionKey "ProductName" "IOI Desk"
+VIAddVersionKey "ProductVersion" "${VERSION}"
+VIAddVersionKey "FileVersion" "${VERSION}.0"
+VIAddVersionKey "FileDescription" "IOI Desk installer"
+VIAddVersionKey "CompanyName" "IOI"
+VIAddVersionKey "LegalCopyright" "IOI contributors"
 OutFile "${OUTPUT}"
 InstallDir "$LOCALAPPDATA\Programs\IOI Desk"
 InstallDirRegKey HKCU "Software\IOI\IOI Desk" "InstallDir"
@@ -32,7 +39,7 @@ Function .onInit
         Sleep 500
         Goto wait_for_app
       ${EndIf}
-      MessageBox MB_OK|MB_ICONEXCLAMATION "Encerre o IOI Desk antes de instalar. Seus outros aplicativos e sessÃµes podem continuar abertos."
+      MessageBox MB_OK|MB_ICONEXCLAMATION "Encerre o IOI Desk antes de instalar. Seus outros aplicativos e sessões podem continuar abertos."
       Abort
     ${EndIf}
 FunctionEnd

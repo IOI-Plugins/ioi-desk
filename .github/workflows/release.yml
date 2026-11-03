@@ -55,13 +55,30 @@ jobs:
           alerts=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/code-scanning/alerts?state=open&per_page=100" | jq '[.[][] | select(.rule.security_severity_level == "critical" or .rule.security_severity_level == "high")] | length')
           if [ "$alerts" != 0 ]; then echo 'Open high/critical code-scanning alerts block publication'; exit 1; fi
   windows:
-    needs: source
+    needs: [source, validate]
     runs-on: windows-2022
-    timeout-minutes: 20
+    environment: release
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    env:
+      WINDOWS_SIGNING_PUBLISHER: ${{ vars.WINDOWS_SIGNING_PUBLISHER }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Require production Windows signing configuration
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+        run: |
+          foreach($name in @('SIGNPATH_API_TOKEN','SIGNPATH_ORGANIZATION_ID','SIGNPATH_PROJECT_SLUG','SIGNPATH_SIGNING_POLICY_SLUG','WINDOWS_SIGNING_PUBLISHER')){
+            if([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))){throw "Missing production signing configuration: $name. See docs/WINDOWS-SIGNING.md. Unsigned release refused."}
+          }
       - run: python tools/fetch-updater.py --installer
       - run: python tools/fetch-deskflow-source.py
       - shell: pwsh
@@ -70,7 +87,60 @@ jobs:
           $runtime=(Get-Content vendor/windows-runtime-path.txt -Raw).Trim()
           ./tools/build-windows.ps1 -IncludeRuntime -DeskflowRoot $runtime
           ./tools/test-windows.ps1
+      - name: Upload app for verified build-origin signing
+        id: unsigned-app
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned-windows-app
+          path: dist/windows/IOIDesk.exe
+          if-no-files-found: error
+          retention-days: 1
+      - name: Sign Windows application with production Authenticode identity
+        uses: SignPath/github-action-submit-signing-request@4184a38a17e5b37d026a3ed443581c1f03ae1b3a
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: windows-app
+          github-artifact-id: ${{ steps.unsigned-app.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 600
+          output-artifact-directory: work/signed-windows-app
+      - name: Verify signed app before packaging
+        shell: pwsh
+        run: |
+          ./tools/verify-authenticode-windows.ps1 -Path work/signed-windows-app/IOIDesk.exe -ExpectedPublisher $env:WINDOWS_SIGNING_PUBLISHER
+          Copy-Item -LiteralPath work/signed-windows-app/IOIDesk.exe -Destination dist/windows/IOIDesk.exe -Force
       - run: python tools/package-installer-windows.py
+      - name: Upload installer for verified build-origin signing
+        id: unsigned-installer
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned-windows-installer
+          path: dist/*-windows-x64-setup.exe
+          if-no-files-found: error
+          retention-days: 1
+      - name: Sign Windows installer with production Authenticode identity
+        uses: SignPath/github-action-submit-signing-request@4184a38a17e5b37d026a3ed443581c1f03ae1b3a
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: windows-installer
+          github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 600
+          output-artifact-directory: work/signed-windows-installer
+      - name: Verify signed installer before testing and publication
+        shell: pwsh
+        run: |
+          $release=Get-Content release.json -Raw | ConvertFrom-Json
+          $name='IOIDesk-'+$release.version+'-windows-x64-setup.exe'
+          $signed=Join-Path work/signed-windows-installer $name
+          ./tools/verify-authenticode-windows.ps1 -Path $signed -ExpectedPublisher $env:WINDOWS_SIGNING_PUBLISHER
+          Copy-Item -LiteralPath $signed -Destination (Join-Path dist $name) -Force
       - run: python tools/test-windows-installer.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

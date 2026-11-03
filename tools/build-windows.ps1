@@ -4,8 +4,11 @@ $root=Split-Path $PSScriptRoot -Parent
 $release=Get-Content -LiteralPath (Join-Path $root 'release.json') -Raw | ConvertFrom-Json
 $updates=Get-Content -LiteralPath (Join-Path $root 'assets/updates.json') -Raw | ConvertFrom-Json
 if([Convert]::FromBase64String($updates.publicKey).Length -ne 32){throw 'Invalid updater public key.'}
+if($release.version -notmatch '^\d+\.\d+\.\d+$' -or [int]$release.build -lt 0 -or [int]$release.build -gt 65535){throw 'Invalid Windows version metadata.'}
 $destination=Join-Path $root 'dist/windows'
 New-Item -ItemType Directory -Path $destination -Force | Out-Null
+$assembly='using System.Reflection; [assembly: AssemblyTitle("IOI Desk")] [assembly: AssemblyProduct("IOI Desk")] [assembly: AssemblyCompany("IOI")] [assembly: AssemblyVersion("'+$release.version+'.'+$release.build+'")] [assembly: AssemblyFileVersion("'+$release.version+'.'+$release.build+'")] [assembly: AssemblyInformationalVersion("'+$release.version+'")]'
+Set-Content -LiteralPath (Join-Path $root 'src/windows/AssemblyInfo.cs') -Value $assembly -Encoding UTF8
 $versionSource=Join-Path $root 'src/windows/Product.cs'
 Set-Content -LiteralPath $versionSource -Value ('static class Product { public const string Name="IOI Desk"; public const string Version="'+$release.version+'"; }') -Encoding UTF8
 $config='static class UpdateConfig { public const string Build="'+$release.build+'"; public const string PublicKey="'+$updates.publicKey+'"; public const string WindowsFeed="'+$updates.windowsFeed+'"; }'
