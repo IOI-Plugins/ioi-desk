@@ -15,19 +15,31 @@ Validação atual desse fluxo: actionlint e análise de sintaxe PowerShell
 aprovados. A identidade real, o pacote final e a instalação certificada ainda
 dependem da conclusão do cadastro e dos testes no Partner Center.
 
+Em 4/11/2026, o produto IOI Desk foi criado na conta Tecnovix, Store ID
+`9P7S2J0CTNSL`. A identidade oficial está em `assets/store-identity.json` e é
+usada pelo workflow quando não houver variáveis de substituição. O MSIX
+0.4.5.0 x64 foi gerado com MakeAppx e aceito pela validação inicial de upload
+do Partner Center; a seção Pacotes aparece como Completo/Validated.
+Isso não é certificação nem publicação. A justificativa runFullTrust, as
+propriedades e a listagem pt-BR foram cadastradas. O questionário IARC gerou
+classificação Livre no Brasil; sua aceitação legal aguarda confirmação do
+proprietário. Preço e verificação final da conta ainda precisam ser concluídos.
+A política de privacidade está publicada em `docs/PRIVACY.md`.
+
 `tools/package-windows.ps1` gera e valida MSIX x64 com MakeAppx, incluindo
 Deskflow original, licenças, fontes correspondentes e complemento do navegador.
 `-Preview` usa uma identidade exclusiva de teste; não instalar nem submeter.
 Para a loja, informar os valores reais de Name e Publisher da identidade do
-produto no Partner Center. Não existe ainda esse produto cadastrado.
+produto no Partner Center. `-MakeAppxPath` permite usar o SDK oficial obtido
+por NuGet sem instalar globalmente as ferramentas de desenvolvimento.
 
 O pacote precisa de runFullTrust para organizar janelas e executar o componente
 original de compartilhamento de entrada. A Microsoft analisa essa declaração
 durante a certificação. O MSIX não instala drivers de monitor virtual; testar
 esse recurso com o driver externo instalado separadamente.
 
-Ainda faltam cadastro, identidade real, política de privacidade publicada,
-imagens da loja e validação da instalação/atualização MSIX em sessão de teste.
+Ainda faltam concluir preço/classificação, confirmar a liberação da conta e
+validar a instalação/atualização do pacote certificado em sessão de teste.
 Não declarar o pacote aprovado ou compatível com a loja só por compilar.
 
 ## Mac App Store
