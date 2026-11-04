@@ -1,4 +1,4 @@
-param([string]$IdentityName,[string]$Publisher,[string]$PublisherDisplayName='IOI',[switch]$Preview)
+param([string]$IdentityName,[string]$Publisher,[string]$PublisherDisplayName='IOI',[switch]$Preview,[string]$MakeAppxPath)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 if($Preview){$IdentityName='IOI.IOIDesk.Preview';$Publisher='CN=IOI Desk Preview'}
@@ -45,7 +45,8 @@ $manifest=@"
 "@
 $manifest | Set-Content -LiteralPath (Join-Path $stage 'AppxManifest.xml') -Encoding UTF8
 $sdk=Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
-$makeappx=@(Get-ChildItem -LiteralPath $sdk -Recurse -Filter makeappx.exe | Where-Object {$_.Directory.Name -eq 'x64'} | Sort-Object FullName -Descending)[0].FullName
+$makeappx=$MakeAppxPath
+if(!$makeappx -and (Test-Path -LiteralPath $sdk)){$makeappx=@(Get-ChildItem -LiteralPath $sdk -Recurse -Filter makeappx.exe | Where-Object {$_.Directory.Name -eq 'x64'} | Sort-Object FullName -Descending)[0].FullName}
 if(!$makeappx){throw 'Windows SDK MakeAppx required.'}
 $output=Join-Path $root ('dist/IOIDesk-'+$version+$(if($Preview){'-preview'}else{'-store'})+'-x64.msix')
 & $makeappx pack /d $stage /p $output /o

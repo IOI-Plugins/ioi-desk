@@ -26,7 +26,14 @@ jobs:
         shell: pwsh
         run: |
           foreach($name in @('STORE_IDENTITY_NAME','STORE_PUBLISHER','STORE_PUBLISHER_DISPLAY_NAME')){
-            if([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))){throw "Missing Partner Center identity: $name"}
+            if([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))){
+              $identity=Get-Content assets/store-identity.json -Raw | ConvertFrom-Json
+              $property=@{STORE_IDENTITY_NAME='identityName';STORE_PUBLISHER='publisher';STORE_PUBLISHER_DISPLAY_NAME='publisherDisplayName'}[$name]
+              $value=$identity.$property
+              if([string]::IsNullOrWhiteSpace($value)){throw "Missing Partner Center identity: $name"}
+              [Environment]::SetEnvironmentVariable($name,$value)
+              "$name=$value" >> $env:GITHUB_ENV
+            }
           }
           git merge-base --is-ancestor $env:GITHUB_SHA origin/main
           if($LASTEXITCODE -ne 0){throw 'Store packages must come from main.'}
