@@ -2,6 +2,19 @@
 
 ## Microsoft Store
 
+O workflow `store.yml` gera o pacote de submissão por execução manual ou tag
+de versão. Ele usa as variáveis `WINDOWS_STORE_IDENTITY_NAME`,
+`WINDOWS_STORE_PUBLISHER` e `WINDOWS_STORE_PUBLISHER_DISPLAY_NAME`, que devem
+ser copiadas da identidade oficial do produto no Partner Center. Ele não usa
+SignPath e não instala, submete ou publica o aplicativo. A assinatura da Store
+ocorre após a certificação. A quarta parte da versão MSIX fica em zero,
+reservada pela Microsoft Store. A configuração de atualização do aplicativo já
+detecta identidade de pacote e delega as atualizações ao Windows.
+
+Validação atual desse fluxo: actionlint e análise de sintaxe PowerShell
+aprovados. A identidade real, o pacote final e a instalação certificada ainda
+dependem da conclusão do cadastro e dos testes no Partner Center.
+
 `tools/package-windows.ps1` gera e valida MSIX x64 com MakeAppx, incluindo
 Deskflow original, licenças, fontes correspondentes e complemento do navegador.
 `-Preview` usa uma identidade exclusiva de teste; não instalar nem submeter.

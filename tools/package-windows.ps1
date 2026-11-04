@@ -5,7 +5,8 @@ if($Preview){$IdentityName='IOI.IOIDesk.Preview';$Publisher='CN=IOI Desk Preview
 if(!$IdentityName -or !$Publisher){throw 'Provide the exact identity name and publisher from Partner Center. Preview is for CI validation only.'}
 if($IdentityName -notmatch '^[A-Za-z0-9.-]{3,50}$'){throw 'Invalid package identity.'}
 $release=Get-Content (Join-Path $root 'release.json') -Raw | ConvertFrom-Json
-$version=$release.version+'.'+$release.build
+# The Store reserves the fourth version component and requires it to be zero.
+$version=$release.version+'.0'
 $stage=Join-Path $root 'work/msix-stage'
 if(Test-Path -LiteralPath $stage){throw 'Use a clean work/msix-stage directory; existing files preserved.'}
 New-Item -ItemType Directory -Path $stage -Force | Out-Null

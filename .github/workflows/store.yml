@@ -1,0 +1,64 @@
+name: Build Microsoft Store package
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: store-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  package:
+    if: github.repository == 'IOI-Plugins/ioi-desk'
+    runs-on: windows-2022
+    timeout-minutes: 25
+    env:
+      STORE_IDENTITY_NAME: ${{ vars.WINDOWS_STORE_IDENTITY_NAME }}
+      STORE_PUBLISHER: ${{ vars.WINDOWS_STORE_PUBLISHER }}
+      STORE_PUBLISHER_DISPLAY_NAME: ${{ vars.WINDOWS_STORE_PUBLISHER_DISPLAY_NAME }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require registered Store identity and approved source branch
+        shell: pwsh
+        run: |
+          foreach($name in @('STORE_IDENTITY_NAME','STORE_PUBLISHER','STORE_PUBLISHER_DISPLAY_NAME')){
+            if([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))){throw "Missing Partner Center identity: $name"}
+          }
+          git merge-base --is-ancestor $env:GITHUB_SHA origin/main
+          if($LASTEXITCODE -ne 0){throw 'Store packages must come from main.'}
+          $release=Get-Content release.json -Raw | ConvertFrom-Json
+          if($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -cne ('v'+$release.version)){throw 'Tag/version mismatch.'}
+      - name: Fetch verified runtime, updater and corresponding source
+        shell: pwsh
+        run: |
+          python tools/fetch-updater.py
+          if($LASTEXITCODE -ne 0){throw 'Updater download failed.'}
+          python tools/fetch-deskflow-source.py
+          if($LASTEXITCODE -ne 0){throw 'Corresponding source download failed.'}
+          ./tools/fetch-deskflow-windows.ps1
+      - name: Build and test in isolated data directories
+        shell: pwsh
+        run: |
+          python tools/check-source.py
+          if($LASTEXITCODE -ne 0){throw 'Source validation failed.'}
+          $runtime=(Get-Content vendor/windows-runtime-path.txt -Raw).Trim()
+          ./tools/build-windows.ps1 -IncludeRuntime -DeskflowRoot $runtime
+          ./tools/test-windows.ps1
+      - name: Generate MSIX for Microsoft Store certification
+        shell: pwsh
+        run: |
+          ./tools/package-windows.ps1 -IdentityName $env:STORE_IDENTITY_NAME -Publisher $env:STORE_PUBLISHER -PublisherDisplayName $env:STORE_PUBLISHER_DISPLAY_NAME
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: microsoft-store-submission-package
+          path: dist/*-store-x64.msix
+          if-no-files-found: error
+          retention-days: 14
+      - name: Record certification handoff
+        shell: pwsh
+        run: |
+          'MSIX generated for Partner Center submission. Microsoft signs after certification. This workflow has not submitted or published the application.' >> $env:GITHUB_STEP_SUMMARY
