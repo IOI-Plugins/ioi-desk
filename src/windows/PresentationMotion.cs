@@ -4,7 +4,7 @@ using System.Drawing;
 // Native clicks, tab drags, window moves and menus own their pointer movement.
 static class PresentationMotion {
     public static bool Compensate(bool buttonDown,bool nativeInteraction,ushort buttons) {
-        return !buttonDown&&!nativeInteraction&&(buttons&0x0f)==0;
+        return !buttonDown&&!nativeInteraction&&(buttons&0x0c0f)==0;
     }
     public static Point Move(Point actual,int dx,int dy,double gain,Rectangle bounds) {
         // Windows already applied its native movement. Never accumulate a stale

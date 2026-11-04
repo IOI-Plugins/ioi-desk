@@ -6,6 +6,7 @@ static class PresentationMotionTest {
     public static void Run(string report){
         if(PresentationMotion.Compensate(true,false,0)||PresentationMotion.Compensate(false,true,0))throw new Exception("Native drags/capture would be warped");
         foreach(ushort flag in new ushort[]{1,2,4,8})if(PresentationMotion.Compensate(false,false,flag))throw new Exception("A button transition would be warped");
+        foreach(ushort flag in new ushort[]{0x400,0x800,0xc00})if(PresentationMotion.Compensate(false,false,flag))throw new Exception("Wheel packets must not reposition the pointer");
         if(!PresentationMotion.Compensate(false,false,0))throw new Exception("Free pointer motion disabled");
         Rectangle bounds=new Rectangle(-1920,0,1920,1080);
         if(PresentationMotion.Move(new Point(-700,35),10,-10,1,bounds)!=new Point(-700,35))throw new Exception("Native gain altered tab coordinates");

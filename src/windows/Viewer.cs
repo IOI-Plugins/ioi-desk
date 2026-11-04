@@ -36,6 +36,7 @@ class Viewer : Form {
     bool nativePointerInteraction;
     int inputToken;
     int controlCheckTicks;
+    DateTime nextRoutingLog=DateTime.MinValue,nextWheelLog=DateTime.MinValue;
     Point returnPoint,focusPoint;
     Rectangle imageRect,viewport,capturedBounds;
     DateTime noticeUntil=DateTime.MinValue;
@@ -161,6 +162,7 @@ class Viewer : Form {
         if(bytes==uint.MaxValue||bytes<headerSize+24||BitConverter.ToUInt32(rawBuffer,0)!=0)return;
         int offset=(int)headerSize;
         ushort buttons=BitConverter.ToUInt16(rawBuffer,offset+4);
+        if((buttons&0x0c00)!=0&&DateTime.UtcNow>=nextWheelLog){nextWheelLog=DateTime.UtcNow.AddSeconds(2);PresentationDiagnostics.Record("wheel-received",inputToken,buttons);}
         if(InputSafety.RawMiddleDown(buttons)){ReleaseControl("middle-button-raw");return;}
         if((BitConverter.ToUInt16(rawBuffer,offset)&1)!=0)return;
         int dx=BitConverter.ToInt32(rawBuffer,offset+12),dy=BitConverter.ToInt32(rawBuffer,offset+16);
@@ -182,6 +184,7 @@ class Viewer : Form {
     }
     void CaptureFrame(object s,EventArgs e) {
         if(controlling)InputSafety.Pulse();
+        if(controlling&&DateTime.UtcNow>=nextRoutingLog){nextRoutingLog=DateTime.UtcNow.AddSeconds(15);PresentationDiagnostics.Record("active",inputToken,0);}
         if(controlling&&++controlCheckTicks%15==0){
             IntPtr foreground=Native.GetForegroundWindow();Native.RectangleRect rect;
             if(foreground!=IntPtr.Zero&&Native.GetWindowRect(foreground,out rect)&&rect.Right>rect.Left&&rect.Bottom>rect.Top&&!sourceArea.IntersectsWith(Rectangle.FromLTRB(rect.Left,rect.Top,rect.Right,rect.Bottom)))
@@ -233,6 +236,7 @@ class Viewer : Form {
         controlling=true;noticeUntil=DateTime.MinValue;status.Visible=false;header.Visible=false;header.Height=0;Native.SetCursorPos(destination.X,destination.Y);control.Text="Sair · F8";
         Rectangle host=Screen.FromPoint(returnPoint).WorkingArea;
         inputToken=InputSafety.Arm(Handle,new Point(Math.Max(host.Left,Math.Min(host.Right-1,returnPoint.X)),Math.Max(host.Top,Math.Min(host.Bottom-1,returnPoint.Y))));
+        nextRoutingLog=DateTime.UtcNow.AddSeconds(15);nextWheelLog=DateTime.MinValue;PresentationDiagnostics.Record("entered",inputToken,0);
         TraceLog.Write("control.entered","","sourceDisplay",SourceDevice,"assignedTitle",assignedWindow==null?"":assignedWindow.Title);
     }
     void ReleaseControl(){ReleaseControl("application");}
@@ -240,6 +244,7 @@ class Viewer : Form {
     void ReleaseControl(string reason,bool restorePointer) {
         if(!controlling)return;controlling=false;PanelInput.Clear(this);Native.ClipCursor(IntPtr.Zero);
         InputSafety.Clear();TraceLog.Write("control.exited","","source",reason);
+        PresentationDiagnostics.Record("exited",inputToken,0);
         Rectangle host=Screen.FromPoint(returnPoint).WorkingArea;
         if(restorePointer)Native.SetCursorPos(Math.Max(host.Left,Math.Min(host.Right-1,returnPoint.X)),Math.Max(host.Top,Math.Min(host.Bottom-1,returnPoint.Y)));control.Text="Entrar · F8";
     }

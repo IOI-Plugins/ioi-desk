@@ -11,6 +11,7 @@ static class Native {
     [DllImport("user32.dll")] public static extern uint GetRawInputData(IntPtr input,uint command,byte[] data,ref uint size,uint headerSize);
     [DllImport("user32.dll")] public static extern bool ReleaseCapture();
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool GetClipCursor(out RectangleRect rectangle);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window,out RectangleRect rectangle);
     [DllImport("user32.dll")] public static extern bool GetGUIThreadInfo(uint thread,ref GuiThreadInfo info);
     [StructLayout(LayoutKind.Sequential)] public struct GuiThreadInfo {
